@@ -1,0 +1,29 @@
+# Cloudflare Pages / Workers 設定（誰デザ）
+# ここでの binding 名がコード側（platform.env.DB / platform.env.BUCKET）と対応する。
+# 実際の database_id / バケットは SETUP-cloudflare.md の手順で作成して埋める。
+
+name = "kaleido"
+compatibility_date = "2025-07-01"
+# Node 互換API（Buffer 等）を使う場合に有効化。認証は Web Crypto なので必須ではないが、
+# 将来のライブラリ互換のため付けておく。
+compatibility_flags = ["nodejs_compat"]
+
+# SvelteKit(adapter-cloudflare) のビルド出力
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+# --- D1 (SQLite データベース) ---
+[[d1_databases]]
+binding = "DB"                 # コード側: platform.env.DB
+database_name = "kaleido-db"
+database_id = "PLACEHOLDER_D1_DATABASE_ID"   # `wrangler d1 create` の出力で置換
+migrations_dir = "migrations"
+
+# --- R2 (画像などのオブジェクトストレージ) ---
+[[r2_buckets]]
+binding = "BUCKET"             # コード側: platform.env.BUCKET
+bucket_name = "kaleido-submissions"
+
+# --- 環境変数（本番） ---
+# SESSION_SECRET は秘密なので wrangler secret / Pages のダッシュボードで設定する:
+#   npx wrangler pages secret put SESSION_SECRET
+# ローカルは .dev.vars に SESSION_SECRET=... を置く（.gitignore 済み）。

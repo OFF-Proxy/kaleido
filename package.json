@@ -1,0 +1,28 @@
+{
+  "name": "kaleido",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Kaleido — イラスト企画で遊ぶプラットフォーム（最初の企画: 誰デザ）",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "node --import tsx --test src/lib/domain/*.test.ts"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "^2.69.2",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/node": "^26.1.1",
+    "svelte": "^5.56.4",
+    "svelte-check": "^4.7.2",
+    "tailwindcss": "^4.3.2",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
+  }
+}

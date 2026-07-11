@@ -1,0 +1,18 @@
+node_modules/
+/.svelte-kit/
+/build/
+/dist/
+*.log
+.DS_Store
+
+# 環境変数・シークレット
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Cloudflare / wrangler
+.wrangler/
+
+# 参照用のデザイン素材集（アプリ本体ではないので除外）
+design-md/

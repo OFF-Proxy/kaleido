@@ -1,0 +1,395 @@
+@import "tailwindcss";
+
+/*
+  Kaleido — "KINETIC EDITORIAL NOIR" デザインシステム
+  狙い: ペルソナ級のスタイリッシュさ。高コントラストの暗いベースに、
+  エレクトリック紫 × アシッドライムの差し色。硬いエッジ・切り欠き・
+  硬い影（オフセット）・混植タイポ・視認できるグリッド。動いてる感。
+  かわいい寄りではなく "カッコイイ" 全振り。
+*/
+@theme {
+  /* --- サーフェス（ノワール） --- */
+  --color-canvas: #0c0c11;
+  --color-surface-1: #14141b;
+  --color-surface-2: #1a1a23;
+  --color-surface-3: #23232e;
+  --color-paper: #f1efe6; /* 反転ブロック用のオフホワイト */
+
+  /* --- 罫線・グリッド --- */
+  --color-hairline: #26262f;
+  --color-hairline-strong: #3a3a48;
+  --color-line: #333341;
+
+  /* --- インク --- */
+  --color-ink: #f4f3ef;
+  --color-ink-muted: #c2c3d0;
+  --color-ink-subtle: #9296aa;
+  --color-ink-faint: #6e7085;
+
+  /* --- アクセント --- */
+  --color-accent: #a06bff; /* エレクトリック紫（ブランド） */
+  --color-accent-press: #8a54f0;
+  --color-shock: #d4ff3d; /* アシッドライム（衝撃色） */
+  --color-hot: #ff3d7f; /* ホットピンク（第3の差し色） */
+  --color-on-accent: #ffffff;
+  --color-on-shock: #0c0c11;
+
+  /* 立体（3D）用の濃い影色 = ボタンの"厚み"/文字の押し出し */
+  --color-accent-deep: #5a34c4;
+  --color-shock-deep: #8fb800;
+  --color-hot-deep: #b31f52;
+
+  /* --- セマンティック --- */
+  --color-success: #35e08a;
+  --color-warning: #ffc24b;
+  --color-danger: #ff5964;
+
+  /* --- タイポグラフィ（混植） --- */
+  --font-sans: "Zen Kaku Gothic New", "Inter", system-ui, -apple-system,
+    sans-serif;
+  --font-display: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  --font-en: "Anton", "Zen Kaku Gothic New", sans-serif;
+  --font-mono: "Space Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* --- 角丸は基本シャープ --- */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+
+  /* --- 硬いオフセット影（印刷/ステッカー感） --- */
+  --shadow-hard: 5px 5px 0 rgba(0, 0, 0, 0.55);
+  --shadow-hard-accent: 6px 6px 0 var(--color-accent);
+  --shadow-hard-shock: 6px 6px 0 var(--color-shock);
+
+  /* --- グラデ（キネティック用） --- */
+  --grad-brand: linear-gradient(100deg, #a06bff 0%, #ff3d7f 50%, #d4ff3d 100%);
+}
+
+/* ---------------------------------------------------------------- base */
+html {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body {
+  font-family: var(--font-sans);
+}
+::selection {
+  background: var(--color-shock);
+  color: var(--color-on-shock);
+}
+
+/* キーボード操作のフォーカス表示（低い詳細度で上書きされにくく） */
+:where(a, button, select, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-shock);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* スクロールバー非表示（モバイルの横スクロールナビ等） */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ノワール背景: うっすらグリッド＋上部のエレクトリック・グロー */
+.bg-gallery {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(720px 400px at 6% -8%, rgba(160, 107, 255, 0.20), transparent 60%),
+    radial-gradient(620px 360px at 98% -4%, rgba(212, 255, 61, 0.08), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: auto, auto, 46px 46px, 46px 46px;
+}
+
+/* ---------------------------------------------------------- components */
+@layer components {
+  /* 切り欠き（右上をカット）＝ノワールの象徴シェイプ */
+  .cut {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 18px) 0,
+      100% 18px,
+      100% 100%,
+      0 100%
+    );
+  }
+  .cut-sm {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+
+  /* 見出し用ラベル（モノ・アイブロウ） */
+  .dd-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-shock);
+  }
+
+  /* 斜めのタグ（ステッカー） */
+  .tag {
+    display: inline-block;
+    transform: skewX(-9deg);
+    background: var(--color-shock);
+    color: var(--color-on-shock);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 0.4rem 0.9rem;
+    box-shadow: var(--shadow-hard);
+  }
+  .tag > * {
+    display: inline-block;
+    transform: skewX(9deg);
+  }
+  .tag-violet {
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  /* ボタン: シャープ＋2px枠＋硬い影、ホバーでスナップ */
+  /* 斜めの立体ボタン: パララメガラム＋"厚み"（下エッジ）＋押し込み */
+  .dd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    font-style: italic; /* 文字も斜めに */
+    line-height: 1;
+    padding: 0.8rem 1.4rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transform: skewX(-9deg);
+    transition:
+      transform 0.09s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.09s ease,
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .dd-btn-primary {
+    background: var(--color-shock);
+    color: var(--color-on-shock);
+    box-shadow:
+      0 6px 0 var(--color-shock-deep),
+      0 10px 16px rgba(0, 0, 0, 0.45);
+  }
+  .dd-btn-primary:hover {
+    transform: skewX(-9deg) translateY(-2px);
+    box-shadow:
+      0 8px 0 var(--color-shock-deep),
+      0 14px 20px rgba(0, 0, 0, 0.5);
+  }
+  .dd-btn-primary:active {
+    transform: skewX(-9deg) translateY(4px);
+    box-shadow:
+      0 2px 0 var(--color-shock-deep),
+      0 4px 8px rgba(0, 0, 0, 0.4);
+  }
+  .dd-btn-secondary {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+    box-shadow:
+      inset 0 0 0 2px var(--color-hairline-strong),
+      0 5px 0 rgba(0, 0, 0, 0.5);
+  }
+  .dd-btn-secondary:hover {
+    transform: skewX(-9deg) translateY(-2px);
+    box-shadow:
+      inset 0 0 0 2px var(--color-ink),
+      0 7px 0 rgba(0, 0, 0, 0.5);
+  }
+  .dd-btn-secondary:active {
+    transform: skewX(-9deg) translateY(3px);
+    box-shadow:
+      inset 0 0 0 2px var(--color-ink),
+      0 2px 0 rgba(0, 0, 0, 0.5);
+  }
+  .dd-btn-ghost {
+    background: transparent;
+    color: var(--color-ink-subtle);
+    box-shadow: none;
+    transform: none;
+    font-style: normal;
+  }
+  .dd-btn-ghost:hover {
+    color: var(--color-ink);
+  }
+
+  /* カード: 暗いサーフェス＋硬い枠＋切り欠き */
+  .dd-card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-hairline-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hard);
+  }
+
+  .dd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.28rem 0.7rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-shock);
+    border: 1px solid var(--color-hairline-strong);
+    background: var(--color-surface-2);
+  }
+
+  /* 作品の額: シャープ＋ホバーでアクセント枠＋硬い影 */
+  .dd-frame {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-hairline-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .dd-frame:hover {
+    transform: translate(-3px, -3px);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-hard-accent);
+  }
+  .dd-frame[data-selected="true"] {
+    border-color: var(--color-shock);
+    box-shadow: var(--shadow-hard-shock);
+  }
+
+  /* エディトリアルな企画カード（旧 pop）: 暗色＋鮮烈アクセント */
+  .dd-pop {
+    background: var(--color-surface-1);
+    border: 2px solid var(--color-hairline-strong);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5); /* 下エッジの厚み */
+    transition:
+      transform 0.14s ease,
+      box-shadow 0.14s ease,
+      border-color 0.14s ease;
+  }
+  .dd-pop:hover {
+    transform: translateY(-5px);
+    border-color: var(--pop-ink, var(--color-accent));
+    box-shadow:
+      0 10px 0 var(--pop-ink, var(--color-accent)),
+      0 16px 22px rgba(0, 0, 0, 0.4);
+  }
+  .dd-pop-lilac { --pop-ink: #a06bff; }
+  .dd-pop-pink { --pop-ink: #ff3d7f; }
+  .dd-pop-blue { --pop-ink: #46e0ff; }
+  .dd-pop-mint { --pop-ink: #35e08a; }
+  .dd-pop-amber { --pop-ink: #ffc24b; }
+  .dd-pop-coral { --pop-ink: #ff7a3d; }
+  .dd-pop-num {
+    color: var(--pop-ink);
+    font-family: var(--font-en);
+  }
+
+  /* グラデ文字 */
+  .grad-text {
+    background: var(--grad-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  /* アウトライン文字（塗りなし・縁だけ）＝エディトリアル */
+  .stroke-text {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--color-ink);
+  }
+
+  /* 斜めの3D押し出し見出し（ゲームタイトル風） */
+  .text-3d {
+    transform: skewX(-6deg);
+    transform-origin: left center;
+    color: var(--color-ink);
+    text-shadow:
+      2px 2px 0 var(--color-accent),
+      4px 4px 0 var(--color-accent-deep),
+      6px 7px 0 rgba(0, 0, 0, 0.55);
+  }
+  /* シアン/ライム面のときの押し出し（アクセントごとに上書き可） */
+  .text-3d-shock {
+    color: var(--color-shock);
+    text-shadow:
+      2px 2px 0 var(--color-shock-deep),
+      4px 5px 0 rgba(0, 0, 0, 0.6);
+  }
+
+  /* 斜めのバナー・リボン（ゲームメニューの見出し） */
+  .banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transform: skewX(-9deg);
+    background: var(--color-accent);
+    color: #fff;
+    padding: 0.45rem 1.1rem;
+    box-shadow: 0 5px 0 var(--color-accent-deep);
+  }
+  .banner > * {
+    display: inline-block;
+    transform: skewX(9deg);
+  }
+
+  /* 上部のグラデ帯 */
+  .grad-bar {
+    height: 3px;
+    background: var(--grad-brand);
+  }
+
+  /* 流れるマーキー */
+  .marquee {
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .marquee-track {
+    display: inline-block;
+    animation: dd-marquee 26s linear infinite;
+    font-family: var(--font-en);
+    font-size: 30px;
+    letter-spacing: 0.02em;
+  }
+
+  .float {
+    animation: dd-float 5s ease-in-out infinite;
+  }
+}
+
+@keyframes dd-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes dd-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .float,
+  .dd-btn,
+  .dd-frame,
+  .dd-pop {
+    animation: none !important;
+    transition: none !important;
+  }
+}
