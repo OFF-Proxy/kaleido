@@ -23,5 +23,7 @@ export const GET: RequestHandler = async ({ params, cookies, locals }) => {
     await makeSessionToken(participation.id),
     SESSION_COOKIE_OPTIONS,
   );
-  redirect(303, "/dashboard");
+  // 絵柄当ての参加者は作品提出ページへ、それ以外はダッシュボードへ。
+  const project = await locals.repository.getProject(participation.projectId);
+  redirect(303, project?.gameType === "egaraate" ? "/submit" : "/dashboard");
 };

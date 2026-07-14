@@ -10,14 +10,17 @@ import {
 import { generatePreferredAssignments } from "$lib/domain/shuffle.js";
 import {
   PHASE_META,
-  PHASE_ORDER,
   mayRevealAuthors,
   isAtOrAfter,
+  nextPhaseFor,
+  prevPhaseFor,
+  participantActionFor,
 } from "$lib/domain/phase.js";
 import type {
   Ballot,
   DesignerChoice,
   Difficulty,
+  GameType,
   Notification,
   Participation,
   Project,
@@ -79,6 +82,7 @@ export function createD1Repository(db: D1Database): Repository {
       theme: r.theme as string,
       description: r.description as string,
       phase: r.phase as Phase,
+      gameType: ((r.game_type as string) ?? "daredeza") as GameType,
       isPublic: !!(r.is_public as number),
       excludeArtistGuess: !!(r.exclude_artist_guess as number),
       deadlines: {
@@ -238,7 +242,7 @@ export function createD1Repository(db: D1Database): Repository {
       const meta = PHASE_META[project.phase];
       return {
         phaseLabel: meta.label,
-        action: meta.participantAction,
+        action: participantActionFor(project.gameType, project.phase),
         deadline: project.deadlines.voting ?? null,
         done: false,
       } satisfies ParticipantTask;
@@ -372,6 +376,36 @@ export function createD1Repository(db: D1Database): Repository {
       return (r?.aid as string) ?? null;
     },
 
+    async submitOwnArtwork(input) {
+      const project = await this.getProject(input.projectId);
+      if (!project) return { ok: false, reason: "企画が見つかりません。" };
+      if (project.gameType !== "egaraate") {
+        return { ok: false, reason: "この企画は絵柄当てではありません。" };
+      }
+      if (project.phase !== "ArtworkSubmission") {
+        return { ok: false, reason: "現在は作品提出フェーズではありません。" };
+      }
+      // 既存の自分の作品を差し替え（締切前の変更）。作品と結びつく票も消える。
+      await run(
+        "DELETE FROM artworks WHERE project_id=? AND artist_id=?",
+        input.projectId,
+        input.participationId,
+      );
+      // 提出順を漏らさないため display_order はランダム値
+      const order = Math.floor(Math.random() * 1_000_000_000);
+      await run(
+        "INSERT INTO artworks (id, project_id, assignment_id, design_id, artist_id, image_key, caption, display_order, submitted_at) VALUES (?,?,NULL,NULL,?,?,?,?,?)",
+        crypto.randomUUID(),
+        input.projectId,
+        input.participationId,
+        input.imageUrl,
+        input.caption,
+        order,
+        new Date().toISOString(),
+      );
+      return { ok: true };
+    },
+
     async getOrganizerOverview(id) {
       const project = await this.getProject(id);
       if (!project) return null;
@@ -454,12 +488,12 @@ export function createD1Repository(db: D1Database): Repository {
     async advanceProjectPhase(id, direction) {
       const p = await this.getProject(id);
       if (!p) return;
-      const i = PHASE_ORDER.indexOf(p.phase);
-      const ni =
+      const target =
         direction === "next"
-          ? Math.min(i + 1, PHASE_ORDER.length - 1)
-          : Math.max(i - 1, 0);
-      await run("UPDATE projects SET phase=? WHERE id=?", PHASE_ORDER[ni], id);
+          ? nextPhaseFor(p.gameType, p.phase)
+          : prevPhaseFor(p.gameType, p.phase);
+      if (!target) return; // 端（Result / Draft）では動かさない
+      await run("UPDATE projects SET phase=? WHERE id=?", target, id);
     },
 
     async setExcludeArtistGuess(id, value) {
@@ -533,7 +567,7 @@ export function createD1Repository(db: D1Database): Repository {
         input.theme.trim(),
         input.description.trim(),
         "Recruiting",
-        "daredeza",
+        input.gameType,
         input.isPublic ? "public" : "unlisted",
         input.isPublic ? 1 : 0,
         input.excludeArtistGuess ? 1 : 0,
@@ -569,7 +603,7 @@ export function createD1Repository(db: D1Database): Repository {
 
     async listOrganizerProjects() {
       const rows = await all(
-        "SELECT p.id, p.title, p.theme, p.phase, (SELECT count(*) FROM participations x WHERE x.project_id=p.id) AS n FROM projects p ORDER BY p.created_at DESC",
+        "SELECT p.id, p.title, p.theme, p.phase, p.game_type, (SELECT count(*) FROM participations x WHERE x.project_id=p.id) AS n FROM projects p ORDER BY p.created_at DESC",
       );
       return rows.map(
         (r): OrganizerProjectSummary => ({
@@ -577,6 +611,7 @@ export function createD1Repository(db: D1Database): Repository {
           title: r.title as string,
           theme: r.theme as string,
           phase: r.phase as Phase,
+          gameType: ((r.game_type as string) ?? "daredeza") as GameType,
           participants: r.n as number,
         }),
       );

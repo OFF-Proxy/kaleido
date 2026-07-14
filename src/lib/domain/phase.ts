@@ -5,7 +5,7 @@
  * クライアントへ返してよいかの境界（秘匿境界）もここで一元管理する。
  * 秘匿解除は Result 到達時のみ。
  */
-import type { Phase } from "./types.js";
+import type { GameType, Phase } from "./types.js";
 
 export const PHASE_ORDER: readonly Phase[] = [
   "Draft",
@@ -16,6 +16,49 @@ export const PHASE_ORDER: readonly Phase[] = [
   "Voting",
   "Result",
 ];
+
+/** 絵柄当てはデザイン提出・シャッフルが無い（各自が自分の絵を1枚出す）。 */
+export const EGARAATE_PHASE_ORDER: readonly Phase[] = [
+  "Draft",
+  "Recruiting",
+  "ArtworkSubmission",
+  "Voting",
+  "Result",
+];
+
+/** ゲーム種別に応じたフェーズ順。 */
+export function phasesForGame(game: GameType): readonly Phase[] {
+  return game === "egaraate" ? EGARAATE_PHASE_ORDER : PHASE_ORDER;
+}
+
+/** ゲーム別の次フェーズ。終端なら null。 */
+export function nextPhaseFor(game: GameType, phase: Phase): Phase | null {
+  const seq = phasesForGame(game);
+  const i = seq.indexOf(phase);
+  return i >= 0 && i < seq.length - 1 ? seq[i + 1]! : null;
+}
+
+/** ゲーム別の前フェーズ。先頭なら null。 */
+export function prevPhaseFor(game: GameType, phase: Phase): Phase | null {
+  const seq = phasesForGame(game);
+  const i = seq.indexOf(phase);
+  return i > 0 ? seq[i - 1]! : null;
+}
+
+/** ゲーム別の「今やること」文言（絵柄当ては作画=自分の絵）。 */
+export function participantActionFor(game: GameType, phase: Phase): string {
+  if (game === "egaraate") {
+    switch (phase) {
+      case "ArtworkSubmission":
+        return "あなたの絵柄で作品を1枚提出しましょう。";
+      case "Voting":
+        return "各作品を『誰が描いたか』推理して投票しましょう。";
+      default:
+        return PHASE_META[phase].participantAction;
+    }
+  }
+  return PHASE_META[phase].participantAction;
+}
 
 export interface PhaseMeta {
   readonly phase: Phase;

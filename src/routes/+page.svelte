@@ -44,7 +44,7 @@
     <div class="mt-8 flex flex-wrap gap-3">
       <a href="/organizer/new" class="dd-btn dd-btn-primary">＋ 企画を主催する</a>
       <a href="/organizer" class="dd-btn dd-btn-secondary">🎛 主催ダッシュボード</a>
-      <a href="/vote" class="dd-btn dd-btn-secondary">▶ 投票をみる</a>
+      <a href="/vote?p=demo-daredeza" class="dd-btn dd-btn-secondary">▶ 投票をみる</a>
     </div>
 
     <div
@@ -99,6 +99,49 @@
     <span>{ticker}{ticker}{ticker}</span><span>{ticker}{ticker}{ticker}</span>
   </div>
 </div>
+
+<!-- GAMES: 遊べるゲーム一覧 -->
+<section class="mt-14">
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <span class="banner">
+      <span class="dd-eyebrow" style="color: #fff;">GAMES</span>
+      <span style="font-family: var(--font-display); font-size: 20px;">遊べるゲーム</span>
+    </span>
+    <span class="text-[13px]" style="color: var(--color-ink-subtle);">デモをすぐ体験できます</span>
+  </div>
+
+  <div class="mt-5 grid gap-4 sm:grid-cols-2">
+    <!-- 誰デザ -->
+    <div class="dd-card p-5">
+      <div class="flex items-center gap-2">
+        <span class="tag tag-violet"><span>誰デザ</span></span>
+        <span class="text-[12px]" style="color: var(--color-ink-faint);">デザイナーを当てる</span>
+      </div>
+      <p class="mt-3 text-[14px] leading-relaxed" style="color: var(--color-ink-muted);">
+        お題でキャラをデザイン → 他の人が作画 → 誰がデザインしたかを当てる。
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="/vote?p=demo-daredeza" class="dd-btn dd-btn-primary" style="font-size: 13px;">▶ 投票デモ</a>
+        <a href="/result?p=demo-daredeza" class="dd-btn dd-btn-secondary" style="font-size: 13px;">結果を見る</a>
+      </div>
+    </div>
+
+    <!-- 絵柄当て -->
+    <div class="dd-card p-5">
+      <div class="flex items-center gap-2">
+        <span class="tag"><span>絵柄当て</span></span>
+        <span class="text-[12px]" style="color: var(--color-ink-faint);">描いた人を当てる</span>
+      </div>
+      <p class="mt-3 text-[14px] leading-relaxed" style="color: var(--color-ink-muted);">
+        各自が自分の絵柄で1枚描く → 誰が描いたかを絵柄から推理して当てる。
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="/vote?p=demo-egaraate" class="dd-btn dd-btn-primary" style="font-size: 13px;">▶ 投票デモ</a>
+        <a href="/result?p=demo-egaraate" class="dd-btn dd-btn-secondary" style="font-size: 13px;">結果を見る</a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- NOW PLAYING: 誰デザ -->
 <section class="mt-14">

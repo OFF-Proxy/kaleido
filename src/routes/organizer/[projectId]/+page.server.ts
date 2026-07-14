@@ -1,21 +1,23 @@
 import { error, fail } from "@sveltejs/kit";
-import { PHASE_ORDER, PHASE_META } from "$lib/domain/phase.js";
+import { PHASE_META, phasesForGame } from "$lib/domain/phase.js";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const overview = await locals.repository.getOrganizerOverview(params.projectId);
   if (!overview) error(404, "企画が見つかりません。");
 
-  const phases = PHASE_ORDER.map((p) => ({
+  const isEgaraate = overview.project.gameType === "egaraate";
+
+  const phases = phasesForGame(overview.project.gameType).map((p) => ({
     key: p,
     label: PHASE_META[p].label,
     current: p === overview.project.phase,
   }));
 
-  // 作品が1つでもあるとシャッフル再実行で消えるため、作品0のときだけ許可
-  const canShuffle = overview.counts.artworks === 0;
+  // 誰デザのみ: 作品が1つでもあるとシャッフル再実行で消えるため作品0のときだけ許可
+  const canShuffle = !isEgaraate && overview.counts.artworks === 0;
 
-  return { overview, phases, canShuffle };
+  return { overview, phases, canShuffle, isEgaraate };
 };
 
 export const actions: Actions = {

@@ -12,6 +12,7 @@ import type {
   Ballot,
   DesignerChoice,
   Difficulty,
+  GameType,
   Notification,
   Participation,
   Phase,
@@ -33,6 +34,7 @@ export interface CreateProjectInput {
   readonly title: string;
   readonly theme: string;
   readonly description: string;
+  readonly gameType: GameType;
   readonly isPublic: boolean;
   readonly excludeArtistGuess: boolean;
   readonly deadlines: {
@@ -49,6 +51,7 @@ export interface OrganizerProjectSummary {
   readonly title: string;
   readonly theme: string;
   readonly phase: Phase;
+  readonly gameType: GameType;
   readonly participants: number;
 }
 
@@ -140,6 +143,17 @@ export interface Repository {
     projectId: ProjectId,
     participationId: ParticipationId,
   ): Promise<ArtworkId | null>;
+
+  /**
+   * 絵柄当て: 参加者が自分の作品を1枚提出する（作者=作画者=本人）。
+   * 既存があれば置換（締切前の差し替え）。ArtworkSubmission フェーズのみ。
+   */
+  submitOwnArtwork(input: {
+    projectId: ProjectId;
+    participationId: ParticipationId;
+    imageUrl: string;
+    caption: string;
+  }): Promise<{ ok: boolean; reason?: string }>;
 
   // ---- 主催（organizer）操作 ----
 

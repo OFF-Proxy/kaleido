@@ -16,7 +16,12 @@
   {#each data.projects as p (p.id)}
     <a href={`/organizer/${p.id}`} class="dd-card block p-5" style="text-decoration: none;">
       <div class="flex items-center justify-between">
-        <span class="dd-chip">{PHASE_META[p.phase].label}</span>
+        <div class="flex items-center gap-2">
+          <span class="tag" style="font-size: 11px; padding: 2px 8px;">
+            <span>{p.gameType === "egaraate" ? "絵柄当て" : "誰デザ"}</span>
+          </span>
+          <span class="dd-chip">{PHASE_META[p.phase].label}</span>
+        </div>
         <span class="font-mono text-[12px]" style="color: var(--color-ink-subtle);">
           {p.participants}人
         </span>

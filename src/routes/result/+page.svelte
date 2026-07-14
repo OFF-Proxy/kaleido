@@ -7,10 +7,15 @@
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : "";
 
   const origin = $derived($page.url.origin);
-  const shareUrl = $derived(`${origin}/result`);
-  const title = $derived(data.project?.title ?? "誰デザ");
+  const isEgaraate = $derived(data.gameType === "egaraate");
+  const gameName = $derived(isEgaraate ? "絵柄当て" : "誰デザ");
+  const guessLabel = $derived(isEgaraate ? "描いた人" : "デザイナー");
+  const q = $derived(`?p=${data.projectId}`);
+  const shareUrl = $derived(`${origin}/result${q}`);
+  const cardUrl = $derived(`/result/card.svg${q}`);
+  const title = $derived(data.project?.title ?? gameName);
   const tweetHref = $derived(
-    `https://x.com/intent/tweet?text=${encodeURIComponent(`「${title}」の結果発表！ 作者は誰だ？`)}&url=${encodeURIComponent(shareUrl)}&hashtags=Kaleido,${encodeURIComponent("誰デザ")}`,
+    `https://x.com/intent/tweet?text=${encodeURIComponent(`「${title}」の結果発表！ ${guessLabel}は誰だ？`)}&url=${encodeURIComponent(shareUrl)}&hashtags=Kaleido,${encodeURIComponent(gameName)}`,
   );
 
   async function copyLink() {
@@ -25,8 +30,8 @@
 <svelte:head>
   <title>{title} 結果発表 ・ Kaleido</title>
   <meta property="og:title" content={`${title} 結果発表`} />
-  <meta property="og:description" content="作者は誰だ？ Kaleido の誰デザ結果発表" />
-  <meta property="og:image" content={`${origin}/result/card.svg`} />
+  <meta property="og:description" content={`${guessLabel}は誰だ？ Kaleido の${gameName}結果発表`} />
+  <meta property="og:image" content={`${origin}${cardUrl}`} />
   <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
@@ -44,7 +49,7 @@
 {:else}
 <!-- シェア -->
 <section class="dd-card mt-6 overflow-hidden">
-  <img src="/result/card.svg" alt="結果まとめカード" class="w-full" style="display: block; border-bottom: 1px solid var(--color-hairline-strong);" />
+  <img src={cardUrl} alt="結果まとめカード" class="w-full" style="display: block; border-bottom: 1px solid var(--color-hairline-strong);" />
   <div class="flex flex-wrap items-center gap-3 p-4">
     <span class="dd-eyebrow" style="color: var(--color-ink-subtle);">SHARE</span>
     <a href={tweetHref} target="_blank" rel="noopener" class="dd-btn dd-btn-primary" style="font-size: 13px;">Xでシェア</a>
@@ -64,12 +69,14 @@
             {r.label}
           </div>
           <div class="mt-2 text-[15px]">
-            デザイナー
+            {guessLabel}
             <span class="font-semibold" style="color: var(--color-accent);">{r.designerName}</span>
           </div>
-          <div class="text-[13px]" style="color: var(--color-ink-subtle);">
-            作画 {r.artistName}
-          </div>
+          {#if !isEgaraate}
+            <div class="text-[13px]" style="color: var(--color-ink-subtle);">
+              作画 {r.artistName}
+            </div>
+          {/if}
           <div class="mt-2 text-[12px]" style="color: var(--color-ink-faint);">
             正解 {r.correctCount} / {r.totalVotes} 票
           </div>
@@ -82,7 +89,7 @@
   <aside class="dd-card h-fit p-5">
     <h2 class="text-[18px] font-semibold tracking-tight">正解率ランキング</h2>
     <p class="mt-1 text-[12px]" style="color: var(--color-ink-faint);">
-      自分のデザインは集計から除外
+      {isEgaraate ? "自分の作品は集計から除外" : "自分のデザインは集計から除外"}
     </p>
     <ol class="mt-4 space-y-1">
       {#each data.ranking as row (row.participationId)}

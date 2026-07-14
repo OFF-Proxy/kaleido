@@ -81,8 +81,8 @@
 </section>
 
 <!-- 提出状況カウンタ -->
-<div class="mt-6 grid grid-cols-3 gap-4">
-  {#each [{ l: "参加者", v: o.counts.participants }, { l: "デザイン提出", v: o.counts.designs }, { l: "作画提出", v: o.counts.artworks }] as c (c.l)}
+<div class="mt-6 grid gap-4" style={`grid-template-columns: repeat(${data.isEgaraate ? 2 : 3}, minmax(0, 1fr));`}>
+  {#each data.isEgaraate ? [{ l: "参加者", v: o.counts.participants }, { l: "作品提出", v: o.counts.artworks }] : [{ l: "参加者", v: o.counts.participants }, { l: "デザイン提出", v: o.counts.designs }, { l: "作画提出", v: o.counts.artworks }] as c (c.l)}
     <div class="dd-card p-4">
       <div class="font-mono text-[12px]" style="color: var(--color-ink-subtle);">{c.l}</div>
       <div class="mt-1 text-[30px] font-extrabold" style="font-family: var(--font-en); color: var(--color-shock);">
@@ -92,6 +92,19 @@
   {/each}
 </div>
 
+{#if data.isEgaraate}
+<!-- 絵柄当て: シャッフル無し。提出と投票の導線のみ。 -->
+<section class="dd-card mt-6 p-5">
+  <h2 class="text-[16px] font-bold">絵柄当ての進行</h2>
+  <p class="mt-1 text-[13px]" style="color: var(--color-ink-subtle);">
+    各参加者が自分の絵柄で1枚提出 → 投票で「誰が描いたか」を当てます。デザイン提出・シャッフルはありません。
+  </p>
+  <div class="mt-4 flex flex-wrap gap-2">
+    <a href={`/vote?p=${o.project.id}`} class="dd-btn dd-btn-secondary" style="padding: 6px 12px; font-size: 13px;">▶ 投票ページ</a>
+    <a href={`/result?p=${o.project.id}`} class="dd-btn dd-btn-secondary" style="padding: 6px 12px; font-size: 13px;">結果ページ</a>
+  </div>
+</section>
+{:else}
 <!-- シャッフル & 設定 -->
 <section class="dd-card mt-6 p-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
@@ -160,6 +173,7 @@
     </div>
   {/if}
 </section>
+{/if}
 
 <!-- 参加者名簿 & 招待リンク -->
 <section class="dd-card mt-6 p-5">
@@ -178,11 +192,13 @@
         style={`background: ${i % 2 ? "var(--color-surface-1)" : "var(--color-surface-2)"};`}
       >
         <span class="min-w-[70px] font-bold">{r.displayName}</span>
-        <span class="font-mono text-[12px]" style="color: {r.submittedDesign ? 'var(--color-success)' : 'var(--color-ink-faint)'};">
-          {r.submittedDesign ? "✔ デザイン" : "✗ デザイン"}
-        </span>
+        {#if !data.isEgaraate}
+          <span class="font-mono text-[12px]" style="color: {r.submittedDesign ? 'var(--color-success)' : 'var(--color-ink-faint)'};">
+            {r.submittedDesign ? "✔ デザイン" : "✗ デザイン"}
+          </span>
+        {/if}
         <span class="font-mono text-[12px]" style="color: {r.submittedArtwork ? 'var(--color-success)' : 'var(--color-ink-faint)'};">
-          {r.submittedArtwork ? "✔ 作画" : "✗ 作画"}
+          {r.submittedArtwork ? (data.isEgaraate ? "✔ 作品" : "✔ 作画") : (data.isEgaraate ? "✗ 作品" : "✗ 作画")}
         </span>
         <div class="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto">
           <code

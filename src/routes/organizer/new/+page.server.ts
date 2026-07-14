@@ -18,10 +18,13 @@ export const actions: Actions = {
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
+    const gameType = f.get("gameType") === "egaraate" ? "egaraate" : "daredeza";
+
     const id = await locals.repository.createProject({
       title,
       theme: String(f.get("theme") ?? ""),
       description: String(f.get("description") ?? ""),
+      gameType,
       isPublic: f.get("isPublic") === "on",
       excludeArtistGuess: f.get("excludeArtistGuess") === "on",
       deadlines: {

@@ -25,6 +25,7 @@ export function buildTruthMap(
   );
   const truth = new Map<ArtworkId, ParticipationId>();
   for (const art of artworks) {
+    if (!art.designId) continue; // 絵柄当ては designId が無い
     const author = designAuthor.get(art.designId);
     if (author) truth.set(art.id, author);
   }

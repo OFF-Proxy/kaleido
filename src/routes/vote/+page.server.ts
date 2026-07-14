@@ -18,34 +18,35 @@ function voterRefFrom(
   return anon ? { anonymousKey: anon } : null;
 }
 
-export const load: PageServerLoad = async ({ locals, cookies }) => {
+export const load: PageServerLoad = async ({ locals, cookies, url }) => {
   const repository = locals.repository;
+  const pid = url.searchParams.get("p") ?? DEMO_PROJECT_ID;
   const voterPid = locals.participation?.id ?? null;
   const [project, cards, choicesByCard] = await Promise.all([
-    repository.getProject(DEMO_PROJECT_ID),
-    repository.getPublicArtworkCards(DEMO_PROJECT_ID),
-    repository.getBallotChoices(DEMO_PROJECT_ID, voterPid),
+    repository.getProject(pid),
+    repository.getPublicArtworkCards(pid),
+    repository.getBallotChoices(pid, voterPid),
   ]);
 
   const canVote = project?.phase === "Voting";
 
-  // 自作品（自分のデザインから作られた作品）は投票対象外にする
+  // 自作品（自分のデザイン/自分の絵）は投票対象外にする
   const ownArtworkId = voterPid
-    ? await repository.getMyDesignArtworkId(DEMO_PROJECT_ID, voterPid)
+    ? await repository.getMyDesignArtworkId(pid, voterPid)
     : null;
 
   // 既存の投票（変更可のためプレフィル）
   const voter = voterRefFrom(locals, cookies);
-  const existing = voter
-    ? await repository.getBallot(DEMO_PROJECT_ID, voter)
-    : null;
+  const existing = voter ? await repository.getBallot(pid, voter) : null;
   const prefill: Record<string, string> = {};
   if (existing) {
     for (const v of existing.votes) prefill[v.artworkId] = v.guessedDesignerId;
   }
 
   return {
+    projectId: pid,
     project,
+    gameType: project?.gameType ?? "daredeza",
     cards,
     choicesByCard,
     canVote,
@@ -60,23 +61,24 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 export const actions: Actions = {
   submit: async ({ request, locals, cookies }) => {
     const repository = locals.repository;
-    const project = await repository.getProject(DEMO_PROJECT_ID);
+    const form = await request.formData();
+    const pid = String(form.get("p") || DEMO_PROJECT_ID);
+    const project = await repository.getProject(pid);
     if (project?.phase !== "Voting") {
       return fail(400, { message: "現在は投票期間ではありません。" });
     }
 
     const voterPid = locals.participation?.id ?? null;
     const [cards, choicesByCard] = await Promise.all([
-      repository.getPublicArtworkCards(DEMO_PROJECT_ID),
-      repository.getBallotChoices(DEMO_PROJECT_ID, voterPid),
+      repository.getPublicArtworkCards(pid),
+      repository.getBallotChoices(pid, voterPid),
     ]);
     const ownArtworkId = voterPid
-      ? await repository.getMyDesignArtworkId(DEMO_PROJECT_ID, voterPid)
+      ? await repository.getMyDesignArtworkId(pid, voterPid)
       : null;
     // 自作品は投票対象外
     const votableCards = cards.filter((c) => c.artworkId !== ownArtworkId);
 
-    const form = await request.formData();
     const votes: Vote[] = [];
     for (const c of votableCards) {
       const g = form.get(`vote-${c.artworkId}`);
@@ -118,7 +120,7 @@ export const actions: Actions = {
     }
 
     await repository.saveBallot({
-      projectId: DEMO_PROJECT_ID,
+      projectId: pid,
       voterParticipationId,
       anonymousKey,
       votes,

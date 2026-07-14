@@ -11,6 +11,9 @@
   );
   let submitting = $state(false);
 
+  const isEgaraate = $derived(data.gameType === "egaraate");
+  const guessTarget = $derived(isEgaraate ? "描いた人" : "デザイナー");
+
   const votable = $derived(
     data.cards.filter((c) => c.artworkId !== data.ownArtworkId),
   );
@@ -33,10 +36,10 @@
   <div>
     <p class="dd-eyebrow">{data.project?.theme}</p>
     <h1 class="mt-2 text-[30px] font-bold" style="font-family: var(--font-display);">
-      作者を当てる
+      {guessTarget}を当てる
     </h1>
     <p class="mt-1 text-[14px]" style="color: var(--color-ink-subtle);">
-      各作品のデザイナーを推理して選ぼう。締切前は何度でも変更できます。
+      各作品の{guessTarget}を推理して選ぼう。締切前は何度でも変更できます。
     </p>
     <p class="mt-1 font-mono text-[12px]" style="color: var(--color-ink-faint);">
       候補から自分は除外{data.excludeArtist ? " ・ 作画者も除外（主催設定）" : ""}
@@ -93,6 +96,7 @@
       };
     }}
   >
+    <input type="hidden" name="p" value={data.projectId} />
     <div class="mt-8 grid gap-5 sm:grid-cols-2">
       {#each data.cards as card (card.artworkId)}
         {@const isOwn = card.artworkId === data.ownArtworkId}
@@ -123,12 +127,12 @@
 
             {#if isOwn}
               <p class="mt-3 text-[13px]" style="color: var(--color-ink-faint);">
-                🖌️ あなたのデザインの作品です。投票対象外。
+                🖌️ あなたの作品です。投票対象外。
               </p>
             {:else}
               <label class="mt-3 block">
                 <span class="mb-1 block text-[12px]" style="color: var(--color-ink-subtle);">
-                  デザイナーは誰？
+                  {guessTarget}は誰？
                 </span>
                 <select
                   name={`vote-${card.artworkId}`}

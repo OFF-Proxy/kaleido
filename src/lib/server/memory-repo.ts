@@ -17,9 +17,11 @@ import {
 } from "$lib/domain/scoring.js";
 import {
   PHASE_META,
-  PHASE_ORDER,
   mayRevealAuthors,
   isAtOrAfter,
+  nextPhaseFor,
+  prevPhaseFor,
+  participantActionFor,
 } from "$lib/domain/phase.js";
 import type {
   Artwork,
@@ -150,6 +152,7 @@ const projects: Record<ProjectId, Project> = {
     theme: THEME,
     description: "お題に沿ってキャラをデザインし、他の誰かが作画。誰がデザインしたかを当てよう。",
     phase: "Voting",
+    gameType: "daredeza",
     isPublic: true,
     excludeArtistGuess: true, // デモ: 作画者を候補から除外（主催オプション）
     deadlines: { voting: "2026-07-12T23:59:00+09:00" },
@@ -160,6 +163,7 @@ const projects: Record<ProjectId, Project> = {
     theme: THEME,
     description: "答え合わせと正解率ランキング。",
     phase: "Result",
+    gameType: "daredeza",
     isPublic: true,
     excludeArtistGuess: true,
     deadlines: {},
@@ -206,6 +210,23 @@ let projectSeq = 1;
 
 const notifications: Notification[] = [];
 let notifSeq = 1;
+
+// 絵柄当ての作品（フォールバック用の汎用ストア）。artistId=作者=本人。
+interface EgaraArt {
+  id: string;
+  projectId: ProjectId;
+  artistId: ParticipationId;
+  imageUrl: string;
+  caption: string;
+  order: number;
+}
+const egaraArtworks: EgaraArt[] = [];
+let egaraSeq = 1;
+function egaraArtsOf(id: ProjectId): EgaraArt[] {
+  return egaraArtworks
+    .filter((a) => a.projectId === id)
+    .sort((a, b) => a.order - b.order);
+}
 
 function allParticipations(): Participation[] {
   return [...participations, ...extraParticipations];
@@ -260,6 +281,14 @@ class MemoryRepository implements Repository {
   async getPublicArtworkCards(id: ProjectId): Promise<PublicArtworkCard[]> {
     const project = projects[id];
     if (!project || !isAtOrAfter(project.phase, "Voting")) return [];
+    if (project.gameType === "egaraate") {
+      return egaraArtsOf(id).map((a, i) => ({
+        artworkId: a.id,
+        imageUrl: a.imageUrl,
+        label: `作品 ${String(i + 1).padStart(2, "0")}`,
+        caption: a.caption,
+      }));
+    }
     // 固定シャッフル順で、作者情報を含めずに返す
     return displayOrder.map((artworkId) => {
       const art = artworks.find((a) => a.id === artworkId)!;
@@ -280,6 +309,17 @@ class MemoryRepository implements Repository {
     const project = projects[id];
     const out: Record<string, DesignerChoice[]> = {};
     if (!project || !isAtOrAfter(project.phase, "Voting")) return out;
+
+    if (project.gameType === "egaraate") {
+      // 絵柄当ては作画者本人が答えなので除外しない（自分だけ除く）
+      const parts = allParticipations().filter((p) => p.projectId === id);
+      for (const a of egaraArtsOf(id)) {
+        out[a.id] = parts
+          .filter((p) => p.id !== voterParticipationId)
+          .map((p) => ({ participationId: p.id, displayName: p.displayName }));
+      }
+      return out;
+    }
 
     const artistOf = new Map(artworks.map((a) => [a.id, a.artistId]));
     for (const artworkId of displayOrder) {
@@ -307,7 +347,7 @@ class MemoryRepository implements Repository {
     const meta = PHASE_META[project.phase];
     return {
       phaseLabel: meta.label,
-      action: meta.participantAction,
+      action: participantActionFor(project.gameType, project.phase),
       deadline: project.deadlines.voting ?? null,
       done: false,
     };
@@ -316,6 +356,29 @@ class MemoryRepository implements Repository {
   async getRevealedResults(id: ProjectId): Promise<RevealedResult[]> {
     const project = projects[id];
     if (!project || !mayRevealAuthors(project.phase)) return []; // Result 以外は開示しない
+    if (project.gameType === "egaraate") {
+      const arts = egaraArtsOf(id);
+      const egaraTruth = new Map(arts.map((a) => [a.id, a.artistId]));
+      const projBallots = ballots.filter((b) => b.projectId === id);
+      const t = artworkTallies(projBallots, egaraTruth);
+      const nameOf = new Map(
+        allParticipations()
+          .filter((p) => p.projectId === id)
+          .map((p) => [p.id, p.displayName]),
+      );
+      return arts.map((a, i) => {
+        const tally = t.get(a.id);
+        return {
+          artworkId: a.id,
+          imageUrl: a.imageUrl,
+          label: `作品 ${String(i + 1).padStart(2, "0")}`,
+          designerName: nameOf.get(a.artistId) ?? "?",
+          artistName: nameOf.get(a.artistId) ?? "?",
+          correctCount: tally?.correctCount ?? 0,
+          totalVotes: tally?.totalVotes ?? 0,
+        };
+      });
+    }
     const tallies = artworkTallies(ballots, truth);
     const nameOf = new Map(participations.map((p) => [p.id, p.displayName]));
     return displayOrder.map((artworkId) => {
@@ -337,6 +400,21 @@ class MemoryRepository implements Repository {
   async getParticipantRanking(id: ProjectId): Promise<RankingEntry[]> {
     const project = projects[id];
     if (!project || !mayRevealAuthors(project.phase)) return [];
+    if (project.gameType === "egaraate") {
+      const arts = egaraArtsOf(id);
+      const egaraTruth = new Map(arts.map((a) => [a.id, a.artistId]));
+      const projBallots = ballots.filter((b) => b.projectId === id);
+      const nameOf = new Map(
+        allParticipations()
+          .filter((p) => p.projectId === id)
+          .map((p) => [p.id, p.displayName]),
+      );
+      return participantRanking(projBallots, egaraTruth).map((row, i) => ({
+        ...row,
+        displayName: nameOf.get(row.participationId) ?? "?",
+        rank: i + 1,
+      }));
+    }
     const nameOf = new Map(participations.map((p) => [p.id, p.displayName]));
     const rows = participantRanking(ballots, truth);
     return rows.map((row, i) => ({
@@ -376,6 +454,9 @@ class MemoryRepository implements Repository {
     id: ProjectId,
     pid: ParticipationId,
   ): Promise<string | null> {
+    if (projects[id]?.gameType === "egaraate") {
+      return egaraArtsOf(id).find((a) => a.artistId === pid)?.id ?? null;
+    }
     const design = designs.find(
       (d) => d.projectId === id && d.authorId === pid,
     );
@@ -386,6 +467,37 @@ class MemoryRepository implements Repository {
     return art?.id ?? null;
   }
 
+  async submitOwnArtwork(input: {
+    projectId: ProjectId;
+    participationId: ParticipationId;
+    imageUrl: string;
+    caption: string;
+  }): Promise<{ ok: boolean; reason?: string }> {
+    const project = projects[input.projectId];
+    if (!project) return { ok: false, reason: "企画が見つかりません。" };
+    if (project.gameType !== "egaraate") {
+      return { ok: false, reason: "この企画は絵柄当てではありません。" };
+    }
+    if (project.phase !== "ArtworkSubmission") {
+      return { ok: false, reason: "現在は作品提出フェーズではありません。" };
+    }
+    const idx = egaraArtworks.findIndex(
+      (a) =>
+        a.projectId === input.projectId &&
+        a.artistId === input.participationId,
+    );
+    if (idx >= 0) egaraArtworks.splice(idx, 1);
+    egaraArtworks.push({
+      id: `ea${egaraSeq++}`,
+      projectId: input.projectId,
+      artistId: input.participationId,
+      imageUrl: input.imageUrl,
+      caption: input.caption,
+      order: Math.random(),
+    });
+    return { ok: true };
+  }
+
   // ---- 主催操作 ----
 
   async getOrganizerOverview(
@@ -393,6 +505,30 @@ class MemoryRepository implements Repository {
   ): Promise<OrganizerOverview | null> {
     const project = projects[id];
     if (!project) return null;
+
+    if (project.gameType === "egaraate") {
+      const arts = egaraArtsOf(id);
+      const submitted = new Set(arts.map((a) => a.artistId));
+      const roster = allParticipations()
+        .filter((p) => p.projectId === id)
+        .map((p) => ({
+          displayName: p.displayName,
+          inviteToken: tokenOfParticipation.get(p.id) ?? "",
+          submittedDesign: false,
+          submittedArtwork: submitted.has(p.id),
+        }));
+      return {
+        project,
+        roster,
+        matching: null,
+        preferenceSatisfied: null,
+        counts: {
+          participants: roster.length,
+          designs: 0,
+          artworks: arts.length,
+        },
+      };
+    }
 
     const roster = allParticipations()
       .filter((p) => p.projectId === id)
@@ -446,12 +582,12 @@ class MemoryRepository implements Repository {
   ): Promise<void> {
     const p = projects[id];
     if (!p) return;
-    const i = PHASE_ORDER.indexOf(p.phase);
-    const ni =
+    const target =
       direction === "next"
-        ? Math.min(i + 1, PHASE_ORDER.length - 1)
-        : Math.max(i - 1, 0);
-    projects[id] = { ...p, phase: PHASE_ORDER[ni]! };
+        ? nextPhaseFor(p.gameType, p.phase)
+        : prevPhaseFor(p.gameType, p.phase);
+    if (!target) return; // 端では動かさない
+    projects[id] = { ...p, phase: target };
   }
 
   async setExcludeArtistGuess(id: ProjectId, value: boolean): Promise<void> {
@@ -502,6 +638,7 @@ class MemoryRepository implements Repository {
       theme: input.theme.trim(),
       description: input.description.trim(),
       phase: "Recruiting",
+      gameType: input.gameType,
       isPublic: input.isPublic,
       excludeArtistGuess: input.excludeArtistGuess,
       deadlines: {
@@ -534,6 +671,7 @@ class MemoryRepository implements Repository {
         title: p.title,
         theme: p.theme,
         phase: p.phase,
+        gameType: p.gameType,
         participants: allParticipations().filter((x) => x.projectId === p.id)
           .length,
       }));

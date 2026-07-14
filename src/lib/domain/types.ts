@@ -12,6 +12,20 @@ export type ProjectId = string;
 export type DesignId = string;
 export type ArtworkId = string;
 
+/** ゲーム種別。daredeza=誰デザ / egaraate=絵柄当て。 */
+export type GameType = "daredeza" | "egaraate";
+
+export const GAME_LABELS: Record<GameType, string> = {
+  daredeza: "誰デザ",
+  egaraate: "絵柄当て",
+};
+
+/** ゲームごとの「当てる対象」ラベル（投票文言に使う）。 */
+export const GAME_GUESS_TARGET: Record<GameType, string> = {
+  daredeza: "デザイナー",
+  egaraate: "描いた人",
+};
+
 /** 難易度・希望のレベル（1=かんたん 2=ふつう 3=むずかしい）。 */
 export type Difficulty = 1 | 2 | 3;
 
@@ -45,6 +59,8 @@ export interface Project {
   readonly theme: string;
   readonly description: string;
   readonly phase: Phase;
+  /** ゲーム種別（誰デザ / 絵柄当て）。 */
+  readonly gameType: GameType;
   /** 公開範囲。true なら観覧者も閲覧・投票可（要件 2.3 / 4.5）。 */
   readonly isPublic: boolean;
   /**
@@ -94,9 +110,11 @@ export interface Assignment {
 export interface Artwork {
   readonly id: ArtworkId;
   readonly projectId: ProjectId;
-  readonly designId: DesignId;
+  /** 誰デザは元デザインID。絵柄当ては自作品のため無い。 */
+  readonly designId?: DesignId;
   readonly artistId: ParticipationId; // 秘匿
   readonly imageUrl: string;
+  readonly caption?: string;
   readonly submittedAt: string;
 }
 

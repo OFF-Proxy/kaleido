@@ -8,12 +8,14 @@ const esc = (s: string) =>
     .replace(/>/g, "&gt;");
 
 /** 結果まとめの共有カード（OGP兼用の 1200x630 SVG）。 */
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, url }) => {
+  const pid = url.searchParams.get("p") ?? DEMO_PROJECT_ID;
   const [project, ranking, results] = await Promise.all([
-    locals.repository.getProject(DEMO_PROJECT_ID),
-    locals.repository.getParticipantRanking(DEMO_PROJECT_ID),
-    locals.repository.getRevealedResults(DEMO_PROJECT_ID),
+    locals.repository.getProject(pid),
+    locals.repository.getParticipantRanking(pid),
+    locals.repository.getRevealedResults(pid),
   ]);
+  const gameName = project?.gameType === "egaraate" ? "絵柄当て" : "誰デザ";
 
   const top = ranking.slice(0, 3);
   const medal = ["1", "2", "3"];
@@ -32,10 +34,10 @@ export const GET: RequestHandler = async ({ locals }) => {
   <rect width="1200" height="630" fill="#0c0c11"/>
   <rect width="1200" height="8" fill="#a06bff"/>
   <text x="120" y="140" font-family="sans-serif" font-size="30" font-weight="700" letter-spacing="6" fill="#d4ff3d">KALEIDO ・ RESULT</text>
-  <text x="120" y="215" font-family="sans-serif" font-size="62" font-weight="800" fill="#f4f3ef">${esc(project?.title ?? "誰デザ")} 結果発表</text>
+  <text x="120" y="215" font-family="sans-serif" font-size="62" font-weight="800" fill="#f4f3ef">${esc(project?.title ?? gameName)} 結果発表</text>
   <text x="120" y="262" font-family="sans-serif" font-size="30" fill="#b7b8c6">正解率ランキング ・ 全${results.length}作品</text>
   ${rows}
-  <text x="1080" y="590" font-family="sans-serif" font-size="26" fill="#7d7e92" text-anchor="end">作者は誰だ？ Kaleido</text>
+  <text x="1080" y="590" font-family="sans-serif" font-size="26" fill="#7d7e92" text-anchor="end">${gameName} ・ Kaleido</text>
 </svg>`;
 
   return new Response(svg, {
