@@ -1,5 +1,4 @@
-import { repository } from "$lib/server/index.js";
-import { DEMO_RESULT_PROJECT_ID } from "$lib/server/memory-repo.js";
+import { DEMO_PROJECT_ID } from "$lib/server/memory-repo.js";
 import type { RequestHandler } from "./$types.js";
 
 const esc = (s: string) =>
@@ -9,11 +8,11 @@ const esc = (s: string) =>
     .replace(/>/g, "&gt;");
 
 /** 結果まとめの共有カード（OGP兼用の 1200x630 SVG）。 */
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
   const [project, ranking, results] = await Promise.all([
-    repository.getProject(DEMO_RESULT_PROJECT_ID),
-    repository.getParticipantRanking(DEMO_RESULT_PROJECT_ID),
-    repository.getRevealedResults(DEMO_RESULT_PROJECT_ID),
+    locals.repository.getProject(DEMO_PROJECT_ID),
+    locals.repository.getParticipantRanking(DEMO_PROJECT_ID),
+    locals.repository.getRevealedResults(DEMO_PROJECT_ID),
   ]);
 
   const top = ranking.slice(0, 3);

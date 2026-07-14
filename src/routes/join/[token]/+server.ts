@@ -1,5 +1,4 @@
 import { error, redirect } from "@sveltejs/kit";
-import { repository } from "$lib/server/index.js";
 import {
   SESSION_COOKIE,
   SESSION_COOKIE_OPTIONS,
@@ -12,8 +11,8 @@ import type { RequestHandler } from "./$types.js";
  * トークンを検証し、正しければセッションCookieを発行してダッシュボードへ。
  * これが「参加者ごと個別トークン」による識別の入口（要件 F-02 / 8.1）。
  */
-export const GET: RequestHandler = async ({ params, cookies }) => {
-  const participation = await repository.getParticipationByInviteToken(
+export const GET: RequestHandler = async ({ params, cookies, locals }) => {
+  const participation = await locals.repository.getParticipationByInviteToken(
     params.token,
   );
   if (!participation) {

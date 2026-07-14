@@ -42,8 +42,9 @@
     </p>
 
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/vote" class="dd-btn dd-btn-primary">▶ 投票をみる</a>
-      <a href="/gallery" class="dd-btn dd-btn-secondary">ギャラリー</a>
+      <a href="/organizer/new" class="dd-btn dd-btn-primary">＋ 企画を主催する</a>
+      <a href="/organizer" class="dd-btn dd-btn-secondary">🎛 主催ダッシュボード</a>
+      <a href="/vote" class="dd-btn dd-btn-secondary">▶ 投票をみる</a>
     </div>
 
     <div

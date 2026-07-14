@@ -18,6 +18,15 @@
     votable.filter((c) => picks[c.artworkId]).length,
   );
   const total = $derived(votable.length);
+
+  // 他の作品で既に選んだ人は選べない（1人1作品まで）
+  function takenElsewhere(artworkId: string, designerId: string): boolean {
+    for (const c of votable) {
+      if (c.artworkId !== artworkId && picks[c.artworkId] === designerId)
+        return true;
+    }
+    return false;
+  }
 </script>
 
 <div class="flex flex-wrap items-end justify-between gap-4">
@@ -129,7 +138,12 @@
                 >
                   <option value="">選択してください</option>
                   {#each data.choicesByCard[card.artworkId] ?? [] as c (c.participationId)}
-                    <option value={c.participationId}>{c.displayName}</option>
+                    <option
+                      value={c.participationId}
+                      disabled={takenElsewhere(card.artworkId, c.participationId)}
+                    >
+                      {c.displayName}{takenElsewhere(card.artworkId, c.participationId) ? "（他で選択済み）" : ""}
+                    </option>
                   {/each}
                 </select>
               </label>

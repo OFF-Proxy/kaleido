@@ -15,13 +15,14 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [[d1_databases]]
 binding = "DB"                 # コード側: platform.env.DB
 database_name = "kaleido-db"
-database_id = "PLACEHOLDER_D1_DATABASE_ID"   # `wrangler d1 create` の出力で置換
+database_id = "cfb3d622-7b9e-4365-b58f-0ff94519c2b1"
 migrations_dir = "migrations"
 
 # --- R2 (画像などのオブジェクトストレージ) ---
-[[r2_buckets]]
-binding = "BUCKET"             # コード側: platform.env.BUCKET
-bucket_name = "kaleido-submissions"
+# 画像アップロードを実装する段で作成・有効化する。それまではコメントアウト。
+# [[r2_buckets]]
+# binding = "BUCKET"             # コード側: platform.env.BUCKET
+# bucket_name = "kaleido-submissions"
 
 # --- 環境変数（本番） ---
 # SESSION_SECRET は秘密なので wrangler secret / Pages のダッシュボードで設定する:

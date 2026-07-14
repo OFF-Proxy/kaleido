@@ -30,7 +30,15 @@ create table if not exists projects (
   phase text not null default 'Draft'
     check (phase in ('Draft','Recruiting','DesignSubmission','Shuffling',
                      'ArtworkSubmission','Voting','Result')),
-  is_public integer not null default 0,           -- 0/1
+  -- ゲーム種別: daredeza=誰デザ / egaraate=絵柄当て
+  game_type text not null default 'daredeza'
+    check (game_type in ('daredeza','egaraate')),
+  -- 公開範囲: public=一覧に公開 / unlisted=リンク限定 / restricted=制限付き
+  visibility text not null default 'unlisted'
+    check (visibility in ('public','unlisted','restricted')),
+  genre text,                                     -- ジャンル/カテゴリ（任意）
+  circle text,                                    -- 界隈（任意）
+  is_public integer not null default 0,           -- 0/1（visibility=public の簡易フラグ）
   exclude_artist_guess integer not null default 0, -- 0/1: 作画者を投票候補から除外
   deadline_design text,
   deadline_artwork text,
@@ -38,6 +46,18 @@ create table if not exists projects (
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 create index if not exists idx_projects_owner on projects(owner_id);
+create index if not exists idx_projects_visibility on projects(visibility);
+
+-- =====================================================================
+-- project_organizers: 主催・共同ホスト（1企画に複数の主催を許可）
+-- =====================================================================
+create table if not exists project_organizers (
+  project_id text not null references projects(id) on delete cascade,
+  user_id text not null references users(id) on delete cascade,
+  role text not null default 'cohost' check (role in ('owner','cohost')),
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  primary key (project_id, user_id)
+);
 
 -- =====================================================================
 -- participations: 企画への参加（個別トークンで識別）
@@ -89,14 +109,17 @@ create index if not exists idx_assignments_artist on assignments(artist_id);
 
 -- =====================================================================
 -- artworks: 作画提出（artist_id は秘匿対象）。display_order は固定シャッフル値。
+--   誰デザ: assignment_id / design_id を持つ（割当に基づく作画）。
+--   絵柄当て: 割当・デザインが無く artist_id 本人の作品なので両者は NULL。
 -- =====================================================================
 create table if not exists artworks (
   id text primary key default (lower(hex(randomblob(16)))),
   project_id text not null references projects(id) on delete cascade,
-  assignment_id text not null unique references assignments(id) on delete cascade,
-  design_id text not null references designs(id) on delete cascade,
+  assignment_id text unique references assignments(id) on delete cascade,
+  design_id text references designs(id) on delete cascade,
   artist_id text not null references participations(id) on delete cascade,
   image_key text not null,
+  caption text not null default '',
   display_order integer not null default 0,
   submitted_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );

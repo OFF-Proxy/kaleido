@@ -35,6 +35,13 @@
   <h1 class="mt-2 text-[30px] font-bold" style="font-family: var(--font-display);">答え合わせ</h1>
 </div>
 
+{#if !data.revealed}
+  <div class="dd-card mt-6 p-6">
+    <p class="text-[15px]" style="color: var(--color-ink-muted);">
+      まだ結果発表フェーズではありません。主催が「結果発表」にすると、答え合わせ・正解率ランキング・シェア画像が表示されます。
+    </p>
+  </div>
+{:else}
 <!-- シェア -->
 <section class="dd-card mt-6 overflow-hidden">
   <img src="/result/card.svg" alt="結果まとめカード" class="w-full" style="display: block; border-bottom: 1px solid var(--color-hairline-strong);" />
@@ -100,3 +107,4 @@
     </ol>
   </aside>
 </section>
+{/if}

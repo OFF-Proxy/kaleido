@@ -1,5 +1,4 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { repository } from "$lib/server/index.js";
 import type { Actions } from "./$types.js";
 
 const str = (v: FormDataEntryValue | null): string | undefined => {
@@ -8,7 +7,7 @@ const str = (v: FormDataEntryValue | null): string | undefined => {
 };
 
 export const actions: Actions = {
-  default: async ({ request }) => {
+  default: async ({ request, locals }) => {
     const f = await request.formData();
     const title = String(f.get("title") ?? "").trim();
     if (!title) {
@@ -19,7 +18,7 @@ export const actions: Actions = {
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
-    const id = await repository.createProject({
+    const id = await locals.repository.createProject({
       title,
       theme: String(f.get("theme") ?? ""),
       description: String(f.get("description") ?? ""),

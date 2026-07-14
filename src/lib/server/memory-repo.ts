@@ -46,7 +46,7 @@ import type {
   VoterRef,
 } from "./repository.js";
 
-export const DEMO_PROJECT_ID = "demo-voting";
+export const DEMO_PROJECT_ID = "demo-daredeza";
 export const DEMO_RESULT_PROJECT_ID = "demo-result";
 /** ダッシュボードで「自分」として表示するデモ参加者。 */
 export const DEMO_ME: ParticipationId = "p1";
@@ -463,6 +463,14 @@ class MemoryRepository implements Repository {
   async runShuffle(
     id: ProjectId,
   ): Promise<{ ok: boolean; reason?: string }> {
+    // 作品が既にあるとシャッフル再実行で消えてしまうため禁止（データ保護）
+    if (artworks.some((a) => a.projectId === id)) {
+      return {
+        ok: false,
+        reason:
+          "すでに作品が提出されているためシャッフルし直せません（作品保護）。",
+      };
+    }
     // 提出済みデザイン（デモは全員提出済み）。難易度と作画希望を渡して最適化。
     const submitted = designs.filter((d) => d.projectId === id);
     if (submitted.length < 2) {

@@ -1,7 +1,6 @@
-import { repository } from "$lib/server/index.js";
 import type { PageServerLoad } from "./$types.js";
 
-export const load: PageServerLoad = async () => {
-  const projects = await repository.listOrganizerProjects();
+export const load: PageServerLoad = async ({ locals }) => {
+  const projects = await locals.repository.listOrganizerProjects();
   return { projects };
 };

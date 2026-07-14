@@ -47,7 +47,16 @@
       <form method="POST" action="?/rewind" use:enhance>
         <button class="dd-btn dd-btn-secondary" style="padding: 6px 12px; font-size: 13px;">← 戻す</button>
       </form>
-      <form method="POST" action="?/advance" use:enhance>
+      <form
+        method="POST"
+        action="?/advance"
+        use:enhance={({ cancel }) => {
+          if (
+            !confirm("フェーズを次に進めますか？（「← 戻す」でいつでも戻せます）")
+          )
+            cancel();
+        }}
+      >
         <button class="dd-btn dd-btn-primary" style="padding: 6px 14px; font-size: 13px;">次へ →</button>
       </form>
     </div>
@@ -89,11 +98,18 @@
     <div>
       <h2 class="text-[16px] font-bold">シャッフル（自動割当）</h2>
       <p class="mt-1 text-[13px]" style="color: var(--color-ink-subtle);">
-        提出済みで「作者 ≠ 作画者」の割当を生成します。何度でも再実行できます。
+        提出済みで「作者 ≠ 作画者」の割当を生成します。
+        {#if !data.canShuffle}
+          <span style="color: var(--color-warning);">作品提出後はロック（作品を守るため）。</span>
+        {:else}
+          作品提出前なら何度でも再実行できます。
+        {/if}
       </p>
     </div>
     <form method="POST" action="?/shuffle" use:enhance>
-      <button class="dd-btn dd-btn-primary">🔀 シャッフル実行</button>
+      <button class="dd-btn dd-btn-primary" disabled={!data.canShuffle}>
+        🔀 シャッフル実行
+      </button>
     </form>
   </div>
 

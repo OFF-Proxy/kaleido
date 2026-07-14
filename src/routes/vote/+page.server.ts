@@ -1,5 +1,4 @@
 import { fail } from "@sveltejs/kit";
-import { repository } from "$lib/server/index.js";
 import { DEMO_PROJECT_ID } from "$lib/server/memory-repo.js";
 import type { Actions, PageServerLoad } from "./$types.js";
 import type { Vote } from "$lib/domain/types.js";
@@ -20,6 +19,7 @@ function voterRefFrom(
 }
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
+  const repository = locals.repository;
   const voterPid = locals.participation?.id ?? null;
   const [project, cards, choicesByCard] = await Promise.all([
     repository.getProject(DEMO_PROJECT_ID),
@@ -59,6 +59,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
 export const actions: Actions = {
   submit: async ({ request, locals, cookies }) => {
+    const repository = locals.repository;
     const project = await repository.getProject(DEMO_PROJECT_ID);
     if (project?.phase !== "Voting") {
       return fail(400, { message: "現在は投票期間ではありません。" });
@@ -89,6 +90,16 @@ export const actions: Actions = {
     }
     if (votes.length < votableCards.length) {
       return fail(400, { message: "すべての作品に回答してください。" });
+    }
+    // 同じ人を複数の作品に割り当てない（各人は1作品まで）
+    const seen = new Set<string>();
+    for (const v of votes) {
+      if (seen.has(v.guessedDesignerId)) {
+        return fail(400, {
+          message: "同じ人を複数の作品に選べません（1人1作品まで）。",
+        });
+      }
+      seen.add(v.guessedDesignerId);
     }
 
     // 投票者の識別。観覧者は匿名鍵を発行して Cookie に保存。
