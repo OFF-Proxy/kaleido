@@ -4,6 +4,13 @@
   let { form }: { form: ActionData } = $props();
 
   let game = $state<"daredeza" | "egaraate">("daredeza");
+  let visibility = $state<"public" | "unlisted" | "restricted">("public");
+
+  const vises = [
+    { key: "public" as const, name: "公開", desc: "みんなの一覧に載る。観覧者も見に来られる。" },
+    { key: "unlisted" as const, name: "リンク限定", desc: "一覧に載らない。リンクを知っている人だけ。" },
+    { key: "restricted" as const, name: "界隈限定", desc: "指定したジャンル/界隈で絞り込んだ人にだけ表示。" },
+  ];
 
   const games = [
     {
@@ -76,6 +83,46 @@
     <span class={labelCls}>説明</span>
     <textarea name="description" rows="2" placeholder="企画の説明・ルールなど" class="w-full px-3 py-2 text-[14px]" style={inputStyle}></textarea>
   </label>
+
+  <input type="hidden" name="visibility" value={visibility} />
+  <div>
+    <span class={labelCls}>公開範囲</span>
+    <div class="grid gap-2">
+      {#each vises as v (v.key)}
+        <button
+          type="button"
+          onclick={() => (visibility = v.key)}
+          class="flex items-start gap-3 p-3 text-left transition"
+          style={`border-radius: var(--radius-md); border: 2px solid ${visibility === v.key ? "var(--color-shock)" : "var(--color-hairline-strong)"}; background: ${visibility === v.key ? "color-mix(in srgb, var(--color-shock) 10%, var(--color-surface-1))" : "var(--color-surface-1)"};`}
+        >
+          <span
+            class="mt-1 inline-block h-3 w-3 shrink-0 rounded-full"
+            style={`background: ${visibility === v.key ? "var(--color-shock)" : "var(--color-hairline-strong)"};`}
+          ></span>
+          <span>
+            <span class="text-[14px] font-bold">{v.name}</span>
+            <span class="mt-0.5 block text-[12px]" style="color: var(--color-ink-subtle);">{v.desc}</span>
+          </span>
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <label>
+      <span class={labelCls}>ジャンル/カテゴリ{visibility === "restricted" ? "" : "（任意）"}</span>
+      <input name="genre" placeholder="オリジナル / 版権 など" class="w-full px-3 py-2 text-[14px]" style={inputStyle} />
+    </label>
+    <label>
+      <span class={labelCls}>界隈{visibility === "restricted" ? "" : "（任意）"}</span>
+      <input name="circle" placeholder="○○クラスタ / △△部 など" class="w-full px-3 py-2 text-[14px]" style={inputStyle} />
+    </label>
+  </div>
+  {#if visibility === "restricted"}
+    <p class="-mt-2 text-[12px]" style="color: var(--color-ink-faint);">
+      界隈限定では、閲覧者が同じ<strong>ジャンル</strong>または<strong>界隈</strong>で絞り込んだときだけ一覧に表示されます。
+    </p>
+  {/if}
 
   <div class="grid gap-4 sm:grid-cols-3">
     {#if game !== "egaraate"}

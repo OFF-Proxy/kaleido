@@ -61,7 +61,11 @@
     style="border-color: var(--color-hairline-strong);"
   >
     <p class="text-[15px]" style="color: var(--color-ink-muted);">
-      現在は投票期間ではありません。投票フェーズになると参加できます。
+      {#if data.restrictedToParticipants}
+        この企画は参加者限定です。観覧者の投票は開放されていません。
+      {:else}
+        現在は投票期間ではありません。投票フェーズになると参加できます。
+      {/if}
     </p>
   </div>
 {:else}

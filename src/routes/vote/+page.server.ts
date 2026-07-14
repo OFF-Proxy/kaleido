@@ -28,7 +28,11 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
     repository.getBallotChoices(pid, voterPid),
   ]);
 
-  const canVote = project?.phase === "Voting";
+  const isParticipant = locals.participation !== null;
+  const viewerVotable = project?.isPublic ?? false;
+  // 観覧者（非参加者）が投票できるのは、観覧者投票が開放された企画のみ。
+  const restrictedToParticipants = !isParticipant && !viewerVotable;
+  const canVote = project?.phase === "Voting" && !restrictedToParticipants;
 
   // 自作品（自分のデザイン/自分の絵）は投票対象外にする
   const ownArtworkId = voterPid
@@ -53,7 +57,8 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
     prefill,
     ownArtworkId,
     hasVoted: existing !== null,
-    isParticipant: locals.participation !== null,
+    isParticipant,
+    restrictedToParticipants,
     excludeArtist: project?.excludeArtistGuess ?? false,
   };
 };
@@ -66,6 +71,12 @@ export const actions: Actions = {
     const project = await repository.getProject(pid);
     if (project?.phase !== "Voting") {
       return fail(400, { message: "現在は投票期間ではありません。" });
+    }
+    // 観覧者投票が開放されていない企画は、参加者以外の投票を受け付けない。
+    if (!locals.participation && !project.isPublic) {
+      return fail(403, {
+        message: "この企画は参加者限定です（観覧者投票は開放されていません）。",
+      });
     }
 
     const voterPid = locals.participation?.id ?? null;

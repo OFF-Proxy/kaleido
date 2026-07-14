@@ -76,7 +76,7 @@ async function seedDaredeza(db: D1Database): Promise<void> {
   s.push(
     db
       .prepare(
-        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, is_public, exclude_artist_guess, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, genre, circle, is_public, exclude_artist_guess, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .bind(
         PID,
@@ -87,6 +87,8 @@ async function seedDaredeza(db: D1Database): Promise<void> {
         "Voting",
         "daredeza",
         "public",
+        "オリジナル",
+        null,
         1,
         1,
         "2026-07-12T23:59:00+09:00",
@@ -223,7 +225,7 @@ async function seedEgaraate(db: D1Database): Promise<void> {
   s.push(
     db
       .prepare(
-        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, is_public, exclude_artist_guess, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, genre, circle, is_public, exclude_artist_guess, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .bind(
         EG_PID,
@@ -233,7 +235,9 @@ async function seedEgaraate(db: D1Database): Promise<void> {
         "各自が自分の絵柄で1枚描いて提出。誰が描いたかを絵柄から当てよう。",
         "Voting",
         "egaraate",
-        "public",
+        "restricted",
+        "オリジナル",
+        "お絵描き部",
         1,
         0,
         "2026-07-20T23:59:00+09:00",

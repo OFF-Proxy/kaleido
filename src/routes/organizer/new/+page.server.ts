@@ -20,11 +20,18 @@ export const actions: Actions = {
 
     const gameType = f.get("gameType") === "egaraate" ? "egaraate" : "daredeza";
 
+    const vRaw = String(f.get("visibility") ?? "public");
+    const visibility =
+      vRaw === "unlisted" || vRaw === "restricted" ? vRaw : "public";
+
     const id = await locals.repository.createProject({
       title,
       theme: String(f.get("theme") ?? ""),
       description: String(f.get("description") ?? ""),
       gameType,
+      visibility,
+      genre: str(f.get("genre")) ?? null,
+      circle: str(f.get("circle")) ?? null,
       isPublic: f.get("isPublic") === "on",
       excludeArtistGuess: f.get("excludeArtistGuess") === "on",
       deadlines: {

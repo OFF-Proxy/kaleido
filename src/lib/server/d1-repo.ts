@@ -29,6 +29,7 @@ import type {
   Phase,
   PublicArtworkCard,
   RevealedResult,
+  Visibility,
   Vote,
 } from "$lib/domain/types.js";
 import type {
@@ -36,6 +37,7 @@ import type {
   OrganizerOverview,
   OrganizerProjectSummary,
   ParticipantTask,
+  PublicProjectSummary,
   RankingEntry,
   Repository,
   VoterRef,
@@ -83,6 +85,9 @@ export function createD1Repository(db: D1Database): Repository {
       description: r.description as string,
       phase: r.phase as Phase,
       gameType: ((r.game_type as string) ?? "daredeza") as GameType,
+      visibility: ((r.visibility as string) ?? "unlisted") as Visibility,
+      genre: (r.genre as string) ?? null,
+      circle: (r.circle as string) ?? null,
       isPublic: !!(r.is_public as number),
       excludeArtistGuess: !!(r.exclude_artist_guess as number),
       deadlines: {
@@ -560,7 +565,7 @@ export function createD1Repository(db: D1Database): Repository {
         now,
       );
       await run(
-        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, is_public, exclude_artist_guess, deadline_design, deadline_artwork, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO projects (id, owner_id, title, theme, description, phase, game_type, visibility, genre, circle, is_public, exclude_artist_guess, deadline_design, deadline_artwork, deadline_voting, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         id,
         uid,
         input.title.trim() || "無題の企画",
@@ -568,7 +573,9 @@ export function createD1Repository(db: D1Database): Repository {
         input.description.trim(),
         "Recruiting",
         input.gameType,
-        input.isPublic ? "public" : "unlisted",
+        input.visibility,
+        input.genre,
+        input.circle,
         input.isPublic ? 1 : 0,
         input.excludeArtistGuess ? 1 : 0,
         input.deadlines.design ?? null,
@@ -613,6 +620,48 @@ export function createD1Repository(db: D1Database): Repository {
           phase: r.phase as Phase,
           gameType: ((r.game_type as string) ?? "daredeza") as GameType,
           participants: r.n as number,
+        }),
+      );
+    },
+
+    async listPublicProjects(filter) {
+      const f = (filter ?? "").trim();
+      // public は常に、restricted は genre/circle が filter に一致する場合のみ。
+      // 進行中（Recruiting〜Result）のみ対象（Draft は出さない）。
+      const rows = f
+        ? await all(
+            `SELECT p.id, p.title, p.theme, p.game_type, p.phase, p.visibility, p.genre, p.circle, p.is_public,
+                    (SELECT count(*) FROM participations x WHERE x.project_id=p.id) AS n,
+                    (SELECT count(*) FROM artworks a WHERE a.project_id=p.id) AS na
+             FROM projects p
+             WHERE p.phase <> 'Draft'
+               AND (p.visibility='public'
+                    OR (p.visibility='restricted' AND (p.genre=? OR p.circle=?)))
+             ORDER BY p.created_at DESC`,
+            f,
+            f,
+          )
+        : await all(
+            `SELECT p.id, p.title, p.theme, p.game_type, p.phase, p.visibility, p.genre, p.circle, p.is_public,
+                    (SELECT count(*) FROM participations x WHERE x.project_id=p.id) AS n,
+                    (SELECT count(*) FROM artworks a WHERE a.project_id=p.id) AS na
+             FROM projects p
+             WHERE p.phase <> 'Draft' AND p.visibility='public'
+             ORDER BY p.created_at DESC`,
+          );
+      return rows.map(
+        (r): PublicProjectSummary => ({
+          id: r.id as string,
+          title: r.title as string,
+          theme: r.theme as string,
+          gameType: ((r.game_type as string) ?? "daredeza") as GameType,
+          phase: r.phase as Phase,
+          visibility: ((r.visibility as string) ?? "unlisted") as Visibility,
+          genre: (r.genre as string) ?? null,
+          circle: (r.circle as string) ?? null,
+          participants: r.n as number,
+          artworks: r.na as number,
+          viewerVotable: !!(r.is_public as number),
         }),
       );
     },

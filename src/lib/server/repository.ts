@@ -21,6 +21,7 @@ import type {
   ParticipationId,
   PublicArtworkCard,
   RevealedResult,
+  Visibility,
 } from "$lib/domain/types.js";
 import type { ScoreRow } from "$lib/domain/scoring.js";
 
@@ -35,6 +36,9 @@ export interface CreateProjectInput {
   readonly theme: string;
   readonly description: string;
   readonly gameType: GameType;
+  readonly visibility: Visibility;
+  readonly genre: string | null;
+  readonly circle: string | null;
   readonly isPublic: boolean;
   readonly excludeArtistGuess: boolean;
   readonly deadlines: {
@@ -43,6 +47,22 @@ export interface CreateProjectInput {
     readonly voting?: string;
   };
   readonly participantNames: string[];
+}
+
+/** 閲覧者向けの公開企画カード（募集/投票一覧）。 */
+export interface PublicProjectSummary {
+  readonly id: ProjectId;
+  readonly title: string;
+  readonly theme: string;
+  readonly gameType: GameType;
+  readonly phase: Phase;
+  readonly visibility: Visibility;
+  readonly genre: string | null;
+  readonly circle: string | null;
+  readonly participants: number;
+  readonly artworks: number;
+  /** 観覧者が投票できるか（isPublic）。 */
+  readonly viewerVotable: boolean;
 }
 
 /** 企画一覧の1行。 */
@@ -179,6 +199,15 @@ export interface Repository {
 
   /** 企画一覧（主催の全企画）。 */
   listOrganizerProjects(): Promise<OrganizerProjectSummary[]>;
+
+  /**
+   * 閲覧者向けの公開企画一覧（Recruiting/Voting など進行中）。
+   *  - public は常に対象
+   *  - restricted は filter（ジャンル/界隈）に一致する場合のみ対象
+   *  - unlisted は常に対象外（リンク限定）
+   * filter 未指定なら public のみ。
+   */
+  listPublicProjects(filter?: string): Promise<PublicProjectSummary[]>;
 
   /** 未提出者へ催促通知を送る（送った件数を返す）。 */
   nudgeUnsubmitted(projectId: ProjectId): Promise<number>;

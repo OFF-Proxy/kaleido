@@ -26,6 +26,15 @@ export const GAME_GUESS_TARGET: Record<GameType, string> = {
   egaraate: "描いた人",
 };
 
+/** 公開範囲。public=一覧公開 / unlisted=リンク限定 / restricted=界隈限定。 */
+export type Visibility = "public" | "unlisted" | "restricted";
+
+export const VISIBILITY_LABELS: Record<Visibility, string> = {
+  public: "公開（一覧に載せる）",
+  unlisted: "リンク限定（知っている人だけ）",
+  restricted: "界隈限定（ジャンル/界隈で絞る）",
+};
+
 /** 難易度・希望のレベル（1=かんたん 2=ふつう 3=むずかしい）。 */
 export type Difficulty = 1 | 2 | 3;
 
@@ -61,7 +70,13 @@ export interface Project {
   readonly phase: Phase;
   /** ゲーム種別（誰デザ / 絵柄当て）。 */
   readonly gameType: GameType;
-  /** 公開範囲。true なら観覧者も閲覧・投票可（要件 2.3 / 4.5）。 */
+  /** 公開範囲（一覧掲載の可否・界隈限定など）。 */
+  readonly visibility: Visibility;
+  /** ジャンル/カテゴリ（任意）。 */
+  readonly genre: string | null;
+  /** 界隈（任意）。 */
+  readonly circle: string | null;
+  /** true なら観覧者も投票できる（投票開放）。 */
   readonly isPublic: boolean;
   /**
    * 主催オプション: 投票の作者候補から「その作品を描いた作画者」を除外するか。

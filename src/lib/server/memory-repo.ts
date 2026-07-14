@@ -43,6 +43,7 @@ import type {
   OrganizerOverview,
   OrganizerProjectSummary,
   ParticipantTask,
+  PublicProjectSummary,
   RankingEntry,
   Repository,
   VoterRef,
@@ -153,6 +154,9 @@ const projects: Record<ProjectId, Project> = {
     description: "お題に沿ってキャラをデザインし、他の誰かが作画。誰がデザインしたかを当てよう。",
     phase: "Voting",
     gameType: "daredeza",
+    visibility: "public",
+    genre: "オリジナル",
+    circle: null,
     isPublic: true,
     excludeArtistGuess: true, // デモ: 作画者を候補から除外（主催オプション）
     deadlines: { voting: "2026-07-12T23:59:00+09:00" },
@@ -164,6 +168,9 @@ const projects: Record<ProjectId, Project> = {
     description: "答え合わせと正解率ランキング。",
     phase: "Result",
     gameType: "daredeza",
+    visibility: "unlisted",
+    genre: null,
+    circle: null,
     isPublic: true,
     excludeArtistGuess: true,
     deadlines: {},
@@ -639,6 +646,9 @@ class MemoryRepository implements Repository {
       description: input.description.trim(),
       phase: "Recruiting",
       gameType: input.gameType,
+      visibility: input.visibility,
+      genre: input.genre,
+      circle: input.circle,
       isPublic: input.isPublic,
       excludeArtistGuess: input.excludeArtistGuess,
       deadlines: {
@@ -674,6 +684,37 @@ class MemoryRepository implements Repository {
         gameType: p.gameType,
         participants: allParticipations().filter((x) => x.projectId === p.id)
           .length,
+      }));
+  }
+
+  async listPublicProjects(
+    filter?: string,
+  ): Promise<PublicProjectSummary[]> {
+    const f = (filter ?? "").trim();
+    return Object.values(projects)
+      .filter((p) => p.id !== DEMO_RESULT_PROJECT_ID && p.phase !== "Draft")
+      .filter((p) => {
+        if (p.visibility === "public") return true;
+        if (p.visibility === "restricted" && f)
+          return p.genre === f || p.circle === f;
+        return false; // unlisted など
+      })
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        theme: p.theme,
+        gameType: p.gameType,
+        phase: p.phase,
+        visibility: p.visibility,
+        genre: p.genre,
+        circle: p.circle,
+        participants: allParticipations().filter((x) => x.projectId === p.id)
+          .length,
+        artworks:
+          p.gameType === "egaraate"
+            ? egaraArtsOf(p.id).length
+            : artworks.filter((a) => a.projectId === p.id).length,
+        viewerVotable: p.isPublic,
       }));
   }
 
