@@ -1,0 +1,279 @@
+[
+  {
+    "name": "企画作成（主催）",
+    "description": "ゲーム種別・公開範囲・締切・参加者名を指定して新しい企画を作る。",
+    "capabilities": {
+      "can": [
+        "ゲーム種別を誰デザ/絵柄当てから選ぶ",
+        "公開範囲を public/unlisted/restricted から選ぶ",
+        "ジャンル・界隈を任意入力（restrictedの絞り込みキー）",
+        "観覧者投票の開放(isPublic)・作画者除外を切替",
+        "参加者名を1行1人で入力し招待トークンを自動発行",
+        "誰デザ/絵柄当てで締切欄が自動で切り替わる"
+      ],
+      "cannot": [
+        "作成後にゲーム種別を変更する（未実装）",
+        "締切をサーバ側で強制する（表示・目安のみ）",
+        "作成時点で共同ホストを追加する（cohost追加UI未実装）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/organizer/new/+page.server.ts",
+      "src/routes/organizer/new/+page.svelte",
+      "src/lib/server/d1-repo.ts",
+      "src/lib/server/repository.ts"
+    ],
+    "usage_example": "/organizer/new でゲームと公開範囲を選び「企画を作成」→ /organizer/<id> にリダイレクト。"
+  },
+  {
+    "name": "主催ダッシュボード",
+    "description": "企画のフェーズ進行・シャッフル・設定・参加者管理を行う運営画面。",
+    "capabilities": {
+      "can": [
+        "フェーズを前進/巻き戻し（ゲーム別の順序、前進は確認ダイアログ）",
+        "シャッフル実行（誰デザのみ、希望難易度を考慮）",
+        "作画者を投票候補から除外する設定の切替（誰デザ）",
+        "未提出者へ催促通知を送る",
+        "参加者ごとの招待リンクをコピー配布",
+        "匿名ラベルで割当と希望充足を確認"
+      ],
+      "cannot": [
+        "作品が1件でも提出済みならシャッフルを再実行する（データ保護のため禁止）",
+        "絵柄当てでシャッフルする（仕様上シャッフルが無い）",
+        "作者と提出物の対応を主催が見る（匿名ラベルのみ、開示はResult）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/organizer/[projectId]/+page.server.ts",
+      "src/routes/organizer/[projectId]/+page.svelte",
+      "src/lib/server/d1-repo.ts",
+      "src/lib/domain/shuffle.ts",
+      "src/lib/domain/phase.ts"
+    ],
+    "usage_example": "/organizer/<projectId> で「次へ→」でフェーズ前進、「🔀シャッフル実行」で自動割当。"
+  },
+  {
+    "name": "企画一覧（主催）",
+    "description": "作成済み企画の一覧。ゲーム種別・フェーズ・参加人数を表示。",
+    "capabilities": {
+      "can": ["全企画を新しい順で一覧", "ゲームバッジとフェーズを確認", "各企画のダッシュボードへ遷移"],
+      "cannot": ["企画の削除・複製（未実装）", "所有者ごとの絞り込み（認証済みユーザー管理が未実装）"]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/organizer/+page.server.ts",
+      "src/routes/organizer/+page.svelte"
+    ],
+    "usage_example": "/organizer で企画カードをクリックしてダッシュボードへ。"
+  },
+  {
+    "name": "招待リンク参加",
+    "description": "個別トークンのURLから参加者としてログインする入口。",
+    "capabilities": {
+      "can": [
+        "有効なトークンでセッションCookie(dd_session)を発行",
+        "絵柄当ての参加者は作品提出(/submit)へ、それ以外はダッシュボードへ自動誘導"
+      ],
+      "cannot": [
+        "無効/改ざんトークンでの参加（404）",
+        "1リンクを複数人で使い分ける想定（1参加者=1トークン）",
+        "メール/OAuth等の本人確認（トークンのみ）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/join/[token]/+server.ts",
+      "src/lib/server/session.ts",
+      "src/hooks.server.ts"
+    ],
+    "usage_example": "/join/<invite_token> を開くとログインし、企画に応じた画面へ遷移。"
+  },
+  {
+    "name": "作品提出（絵柄当て）",
+    "description": "参加者が自分の絵柄の作品を1枚アップロードする。",
+    "capabilities": {
+      "can": [
+        "画像を選ぶとクライアントで自動縮小し data URL 化",
+        "canvas再エンコードで位置情報(Exif)を除去",
+        "締切前は何度でも差し替え（既存を置換）",
+        "ひとこと(caption)を200字まで添える"
+      ],
+      "cannot": [
+        "ArtworkSubmissionフェーズ以外での提出（拒否）",
+        "約1.5MBを超える data URL の保存（さらに縮小が必要）",
+        "誰デザのデザイン/作画をここで提出（このページは絵柄当て専用）",
+        "R2への直接アップロード（R2未接続、D1にdata URL保存）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/submit/+page.server.ts",
+      "src/routes/submit/+page.svelte",
+      "src/lib/server/d1-repo.ts"
+    ],
+    "usage_example": "/submit で画像を選択→プレビュー確認→「作品を提出する」。"
+  },
+  {
+    "name": "誰デザのデザイン提出・作画提出",
+    "description": "誰デザのデザイン提出および割当後の作画提出。",
+    "capabilities": {
+      "can": ["デモではadmin/seedでデザイン・作画・割当を投入して動作確認できる"],
+      "cannot": [
+        "参加者が画面からデザインを提出する（専用UI未実装）",
+        "割り当てられたデザインを画面から作画提出する（専用UI未実装）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/admin/seed/+server.ts",
+      "migrations/0001_init.sql",
+      "src/lib/server/d1-repo.ts"
+    ],
+    "usage_example": "現状はseed投入のみ。実提出フローは今後の実装対象。"
+  },
+  {
+    "name": "投票",
+    "description": "各作品の作者（誰デザ=デザイナー/絵柄当て=描いた人）を推理して投票する。",
+    "capabilities": {
+      "can": [
+        "?p=<projectId> で対象企画を指定（既定はデモ）",
+        "締切前は何度でも投票を変更（upsert）",
+        "参加者票と観覧者票（匿名key)の両対応",
+        "全作品回答で送信可能"
+      ],
+      "cannot": [
+        "自作品へ投票する（対象外）",
+        "同じ人を複数作品に選ぶ（1人1作品、サーバで拒否＋UI無効化）",
+        "観覧者投票が非開放(isPublic=false)の企画へ非参加者が投票（403）",
+        "Voting以外のフェーズで投票（不可）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/vote/+page.server.ts",
+      "src/routes/vote/+page.svelte",
+      "src/lib/server/d1-repo.ts",
+      "src/lib/domain/types.ts"
+    ],
+    "usage_example": "/vote?p=demo-egaraate で各カードの候補を選び「投票を提出」。"
+  },
+  {
+    "name": "結果発表・共有カード",
+    "description": "答え合わせ・正解率ランキングと、SNS共有用のまとめ画像。",
+    "capabilities": {
+      "can": [
+        "?p=<projectId> ごとに答え合わせ・ランキング表示",
+        "ゲーム別に文言を自動切替（デザイナー/描いた人）",
+        "OGP兼用の共有カードSVG(/result/card.svg?p=)を生成",
+        "Xシェア・リンクコピー・画像保存"
+      ],
+      "cannot": [
+        "Resultフェーズ未満で答えを表示（秘匿）",
+        "自作品を自分のランキング集計に含める（除外）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/result/+page.server.ts",
+      "src/routes/result/+page.svelte",
+      "src/routes/result/card.svg/+server.ts",
+      "src/lib/domain/scoring.ts"
+    ],
+    "usage_example": "/result?p=demo-daredeza で答え合わせとランキングを見る。"
+  },
+  {
+    "name": "閲覧（Explore・公開/限定公開）",
+    "description": "公開中の企画を募集中/投票中/結果で一覧し、ジャンル・界隈で絞り込む。",
+    "capabilities": {
+      "can": [
+        "publicの企画を常に一覧",
+        "ジャンル/界隈キーワードでrestrictedの企画も表示",
+        "投票中は投票へ、結果は結果へ、募集中は概要表示"
+      ],
+      "cannot": [
+        "unlistedの企画を一覧に出す（リンク限定のため常に非表示）",
+        "Draftの企画を出す（進行中のみ）",
+        "観覧者投票が非開放の企画で投票する（作品閲覧のみ）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/explore/+page.server.ts",
+      "src/routes/explore/+page.svelte",
+      "src/lib/server/d1-repo.ts",
+      "src/lib/server/repository.ts"
+    ],
+    "usage_example": "/explore で一覧、検索に「お絵描き部」を入れると界隈限定企画も表示。"
+  },
+  {
+    "name": "参加者ダッシュボード",
+    "description": "参加者向けの「今やること」とフェーズ進行の表示。",
+    "capabilities": {
+      "can": ["現在フェーズと参加者向けアクション文言を表示", "ゲーム別のアクション文言に自動切替"],
+      "cannot": [
+        "デモ企画以外を表示（DEMO_PROJECT_ID固定、?p=非対応。既知の制限）",
+        "ここから提出物を出す（提出は/submit等）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/dashboard/+page.server.ts",
+      "src/routes/dashboard/+page.svelte",
+      "src/lib/domain/phase.ts"
+    ],
+    "usage_example": "/dashboard で自分の「今やること」を確認。"
+  },
+  {
+    "name": "ギャラリー",
+    "description": "公開作品を作者情報を伏せて並べる閲覧ビュー。",
+    "capabilities": {
+      "can": ["Voting到達後の作品を匿名で一覧"],
+      "cannot": [
+        "デモ企画以外を表示（DEMO_PROJECT_ID固定、?p=非対応。既知の制限）",
+        "Voting未満での作品表示（秘匿）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/gallery/+page.server.ts",
+      "src/routes/gallery/+page.svelte"
+    ],
+    "usage_example": "/gallery で作品カードを閲覧。"
+  },
+  {
+    "name": "通知（ベル）",
+    "description": "催促・フェーズ開始などのサイト内通知と未読バッジ。",
+    "capabilities": {
+      "can": ["参加者ごとの通知一覧", "ヘッダーのベルに未読数バッジ", "既読化"],
+      "cannot": ["メール/プッシュ通知（サイト内のみ）", "観覧者への通知（参加者のみ）"]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/notifications/+page.server.ts",
+      "src/routes/notifications/+page.svelte",
+      "src/routes/+layout.svelte",
+      "src/routes/+layout.server.ts"
+    ],
+    "usage_example": "ヘッダーの🔔からお知らせを確認。"
+  },
+  {
+    "name": "セッション・ログアウト",
+    "description": "個別トークン由来のログイン状態の管理。",
+    "capabilities": {
+      "can": ["HMAC署名Cookie(dd_session)で参加者を復元", "ログアウトでCookie破棄"],
+      "cannot": [
+        "パスワードログイン（トークンベースのみ）",
+        "SESSION_SECRET変更後に旧Cookieを維持（署名不一致で未ログイン扱い）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/lib/server/session.ts",
+      "src/routes/logout/+server.ts",
+      "src/hooks.server.ts"
+    ],
+    "usage_example": "/logout でログアウト。"
+  }
+]
