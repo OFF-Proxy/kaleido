@@ -42,9 +42,9 @@
     </p>
 
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/organizer/new" class="dd-btn dd-btn-primary">＋ 企画を主催する</a>
+      <a href="/start" class="dd-btn dd-btn-primary">▶ はじめる</a>
       <a href="/explore" class="dd-btn dd-btn-secondary">🔎 みんなの企画</a>
-      <a href="/organizer" class="dd-btn dd-btn-secondary">🎛 主催ダッシュボード</a>
+      <a href="/organizer/new" class="dd-btn dd-btn-secondary">＋ 企画を主催する</a>
     </div>
 
     <div

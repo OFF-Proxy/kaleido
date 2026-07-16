@@ -42,7 +42,9 @@ import type {
   CreateProjectInput,
   OrganizerOverview,
   OrganizerProjectSummary,
+  OrganizerRole,
   ParticipantTask,
+  ProjectOrganizerEntry,
   PublicProjectSummary,
   RankingEntry,
   Repository,
@@ -229,6 +231,16 @@ interface EgaraArt {
 }
 const egaraArtworks: EgaraArt[] = [];
 let egaraSeq = 1;
+
+// 主催者（owner / cohost）。ユーザー表示名と、企画ごとの役割一覧。
+const orgUsers = new Map<string, string>([["u-demo", "主催デモ"]]);
+const orgByProject = new Map<
+  ProjectId,
+  { userId: string; role: OrganizerRole }[]
+>([
+  [DEMO_PROJECT_ID, [{ userId: "u-demo", role: "owner" }]],
+  [DEMO_RESULT_PROJECT_ID, [{ userId: "u-demo", role: "owner" }]],
+]);
 function egaraArtsOf(id: ProjectId): EgaraArt[] {
   return egaraArtworks
     .filter((a) => a.projectId === id)
@@ -637,8 +649,13 @@ class MemoryRepository implements Repository {
     return { ok: true };
   }
 
-  async createProject(input: CreateProjectInput): Promise<ProjectId> {
+  async createProject(
+    input: CreateProjectInput,
+  ): Promise<{ id: ProjectId; ownerUserId: string }> {
     const id = `pj${projectSeq++}-${randSuffix()}`;
+    const ownerUserId = `u-${randSuffix()}${randSuffix()}`;
+    orgUsers.set(ownerUserId, "主催");
+    orgByProject.set(id, [{ userId: ownerUserId, role: "owner" }]);
     projects[id] = {
       id,
       title: input.title.trim() || "無題の企画",
@@ -670,7 +687,38 @@ class MemoryRepository implements Repository {
       extraTokenToId[token] = pid;
       tokenOfParticipation.set(pid, token);
     });
-    return id;
+    return { id, ownerUserId };
+  }
+
+  async listProjectOrganizers(
+    id: ProjectId,
+  ): Promise<ProjectOrganizerEntry[]> {
+    const list = orgByProject.get(id) ?? [];
+    return [...list]
+      .sort(
+        (a, b) => (b.role === "owner" ? 1 : 0) - (a.role === "owner" ? 1 : 0),
+      )
+      .map((o) => ({
+        userId: o.userId,
+        role: o.role,
+        displayName: orgUsers.get(o.userId) ?? "?",
+      }));
+  }
+
+  async getOrganizerRole(
+    id: ProjectId,
+    userId: string,
+  ): Promise<OrganizerRole | null> {
+    return orgByProject.get(id)?.find((o) => o.userId === userId)?.role ?? null;
+  }
+
+  async addCohost(id: ProjectId, displayName: string): Promise<string> {
+    const uid = `u-${randSuffix()}${randSuffix()}`;
+    orgUsers.set(uid, displayName.trim() || "共同ホスト");
+    const list = orgByProject.get(id) ?? [];
+    list.push({ userId: uid, role: "cohost" });
+    orgByProject.set(id, list);
+    return uid;
   }
 
   async listOrganizerProjects(): Promise<OrganizerProjectSummary[]> {

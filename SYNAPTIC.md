@@ -49,7 +49,9 @@
 | リポジトリの契約（全メソッド定義） | `src/lib/server/repository.ts` |
 | D1のSQL実装（本番経路のバグはここ） | `src/lib/server/d1-repo.ts` |
 | デモ／フォールバック実装 | `src/lib/server/memory-repo.ts` |
-| 認証・セッションCookie・署名 | `src/lib/server/session.ts` |
+| 認証・参加者/主催セッションCookie・招待トークン署名 | `src/lib/server/session.ts` |
+| 役割選択の入口（主催/参加） | `src/routes/start/+page.svelte` |
+| 共同ホスト招待の受諾（cohost化＋主催セッション付与） | `src/routes/org-join/[token]/+page.server.ts` |
 | R2保存ヘルパ（未接続） | `src/lib/server/storage.ts` |
 | DBスキーマ・外部キー・View | `migrations/0001_init.sql` |
 | 投票フロー（重複防止・自作品除外・観覧者ゲート） | `src/routes/vote/+page.server.ts` / `+page.svelte` |
@@ -71,7 +73,9 @@
 
 （詳細な can/cannot は同梱の `features.registry.json` を正とする。ここは概観。）
 
-- **主催**: 企画作成（ゲーム種別・公開範囲・締切・参加者名を入力）、企画一覧、ダッシュボード（フェーズ前進/巻き戻し、シャッフル実行、作画者除外の切替、未提出者へ催促、招待リンク配布、匿名の割当確認）。
+- **役割選択（主催/参加）**: `/start` で「主催する／参加する」を選ぶ入口。
+- **主催**: 企画作成（ゲーム種別・公開範囲・締切・参加者名を入力）、企画一覧、ダッシュボード（フェーズ前進/巻き戻し、シャッフル実行、作画者除外の切替、未提出者へ催促、招待リンク配布、匿名の割当確認、**主催メンバー一覧・自分の権限表示・共同ホスト招待リンク発行**）。
+- **共同ホスト（cohost）**: オーナーが発行する招待リンク（`/org-join/<token>`）から、名前を入力して主催メンバーに加わる。参加者トークンとは別枠の**主催セッション**（Cookie `dd_org`）で識別。
 - **参加者**: 招待リンクから参加、絵柄当ての作品提出（画像は自動縮小＋Exif除去）、投票、通知ベル。
 - **観覧者（非参加者）**: `/explore` で公開企画を閲覧、投票開放された企画へ匿名投票。
 - **共通**: 投票ページ、ギャラリー、結果発表＋X共有カード。
@@ -91,7 +95,7 @@
 - **未実装として固定の事実**:
   - **R2未接続**。画像は data URL でD1に保存。提出UIがあるのは**絵柄当てのみ**。
   - **誰デザのデザイン提出／作画提出の専用UIは未実装**（デモは `admin/seed` で投入。実運用フローは今後）。
-  - **共同ホスト（cohost）追加UIは未実装**（DBの `project_organizers` テーブルは存在）。
+  - **共同ホスト（cohost）は実装済み**（`/org-join/<token>` 招待フロー＋主催セッション `dd_org`）。ただし主催操作の**ハードなアクセス制限は未実装**（後述の落とし穴）。
   - **緊急開示（F-29）・監査ログのUIは未実装**（`audit_logs` テーブルのみ存在）。
   - **締切（deadline_*）はサーバ強制されない**。表示・目安のみ。
 - **開発専用ルート**: `/admin/seed`（`?reset=1` で作り直し）と `/d1-check`。**本番前に保護／削除する**。
@@ -146,7 +150,8 @@
    - Node 24 では **Vite 8 必須**（旧Viteは無言で終了）。
 8. **匿名性の境界**: `getPublicArtworkCards`・`getBallotChoices`・結果系は **Voting 到達後 / Result 到達後にしか中身を返さない**（`isAtOrAfter` / `mayRevealAuthors`）。「投票ページが空」はフェーズがVoting未満の正常動作の可能性。
 9. **`admin/seed` のUNIQUE衝突**: `?reset=1` は企画を消すが `users`（`u-demo`）は残るため、ユーザーは `INSERT OR IGNORE` で再投入する。seed失敗時はここを確認。
-10. **セッション**: Cookie名は参加者 `dd_session`（HMAC署名）、観覧者の投票重複抑止は `dd_anon`。署名不一致（`SESSION_SECRET` 変更後など）は静かに未ログイン扱いになる。
+10. **セッション**: Cookie名は参加者 `dd_session`（HMAC署名）、**主催 `dd_org`**（主催ユーザーID署名。企画作成者や cohost に付与）、観覧者の投票重複抑止は `dd_anon`。署名不一致（`SESSION_SECRET` 変更後など）は静かに未ログイン扱いになる。
+13. **主催の権限はソフト表示のみ（ハードゲート無し）**: `locals.organizer`（`dd_org`）で `myRole`（owner/cohost/なし）を**表示**するが、ダッシュボードのフェーズ操作・シャッフル等は現状ログイン無しでも実行できる（デモ企画を壊さないための意図的な緩さ）。cohost招待リンクはオーナーのみ表示。招待トークンは projectId を署名した**決定的リンク**なので、知っていれば複数人が cohost 化できる（都度新ユーザー作成）。「他人が主催操作できる」はこの仕様。
 11. **フェーズはゲーム別**。絵柄当ては `DesignSubmission`/`Shuffling` を飛ばす（`phase.ts > phasesForGame` / `nextPhaseFor` / `prevPhaseFor`）。「絵柄当てでシャッフルが無い」は仕様。
 12. **フェーズの前進/巻き戻しは非破壊**（`UPDATE projects SET phase`）。データは消えない。唯一の破壊操作＝シャッフル（上記1でガード済み）。「戻したら直った/データが戻る」のはこの性質による。
 
@@ -162,7 +167,8 @@
 - **難易度（difficulty）/ 希望（preferredDifficulty）**: 各1〜3。作者が「自分のデザインの難しさ」と「回ってきてほしい難易度の上限」を申告。
 - **匿名ラベル**: 主催向けに本人を隠した表示（`デザイン #n` / `作画者 #n`）。ハッシュ順で並べ本人特定を防ぐ。
 - **フェーズ（phase）**: 企画の進行状態。開示境界を兼ねる。`Draft/Recruiting/DesignSubmission/Shuffling/ArtworkSubmission/Voting/Result`。
-- **主催（owner）/ 共同ホスト（cohost）**: 企画運営者。`project_organizers`（cohost追加UIは未実装）。
+- **主催（owner）/ 共同ホスト（cohost）**: 企画運営者。`project_organizers` テーブル。cohost は `/org-join/<token>` から加入し、主催セッション `dd_org` を持つ。
+- **主催セッション（dd_org）**: 主催ユーザーIDを署名したCookie。参加者セッション `dd_session` とは別枠。`locals.organizer` に解決。
 - **参加者（participation）/ 招待トークン**: 企画への参加単位。`invite_token` で識別、`/join/<token>` が入口。
 - **観覧者（viewer）**: 非参加者。公開企画の閲覧・（開放時）投票が可能。匿名。
 - **投票用紙（ballot）/ 票（vote）**: 1投票者の一連の推理。`ballots` / `votes`。参加者は `voter_participation_id`、観覧者は `anonymous_key`。

@@ -1,4 +1,9 @@
 import { fail, redirect } from "@sveltejs/kit";
+import {
+  ORG_SESSION_COOKIE,
+  SESSION_COOKIE_OPTIONS,
+  makeOrgSessionToken,
+} from "$lib/server/session.js";
 import type { Actions } from "./$types.js";
 
 const str = (v: FormDataEntryValue | null): string | undefined => {
@@ -7,7 +12,7 @@ const str = (v: FormDataEntryValue | null): string | undefined => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, locals }) => {
+  default: async ({ request, locals, cookies }) => {
     const f = await request.formData();
     const title = String(f.get("title") ?? "").trim();
     if (!title) {
@@ -24,7 +29,7 @@ export const actions: Actions = {
     const visibility =
       vRaw === "unlisted" || vRaw === "restricted" ? vRaw : "public";
 
-    const id = await locals.repository.createProject({
+    const { id, ownerUserId } = await locals.repository.createProject({
       title,
       theme: String(f.get("theme") ?? ""),
       description: String(f.get("description") ?? ""),
@@ -41,6 +46,13 @@ export const actions: Actions = {
       },
       participantNames,
     });
+
+    // 作成者に主催（owner）セッションを付与する。
+    cookies.set(
+      ORG_SESSION_COOKIE,
+      await makeOrgSessionToken(ownerUserId),
+      SESSION_COOKIE_OPTIONS,
+    );
 
     redirect(303, `/organizer/${id}`);
   },

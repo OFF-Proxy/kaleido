@@ -49,6 +49,16 @@ export interface CreateProjectInput {
   readonly participantNames: string[];
 }
 
+/** 主催者の役割。owner=オーナー / cohost=共同ホスト。 */
+export type OrganizerRole = "owner" | "cohost";
+
+/** 企画の主催者1件（オーナー/共同ホスト）。 */
+export interface ProjectOrganizerEntry {
+  readonly userId: string;
+  readonly role: OrganizerRole;
+  readonly displayName: string;
+}
+
 /** 閲覧者向けの公開企画カード（募集/投票一覧）。 */
 export interface PublicProjectSummary {
   readonly id: ProjectId;
@@ -194,8 +204,29 @@ export interface Repository {
     projectId: ProjectId,
   ): Promise<{ ok: boolean; reason?: string }>;
 
-  /** 新規企画を作成し、参加者と招待トークンを発行。企画IDを返す。 */
-  createProject(input: CreateProjectInput): Promise<ProjectId>;
+  /**
+   * 新規企画を作成し、参加者と招待トークンを発行。
+   * 企画IDと、作成者（owner）の主催ユーザーIDを返す（作成者に主催セッションを付与するため）。
+   */
+  createProject(
+    input: CreateProjectInput,
+  ): Promise<{ id: ProjectId; ownerUserId: string }>;
+
+  // ---- 主催者（owner / cohost） ----
+
+  /** 企画の主催者一覧（owner を先頭に）。 */
+  listProjectOrganizers(
+    projectId: ProjectId,
+  ): Promise<ProjectOrganizerEntry[]>;
+
+  /** 指定ユーザーのこの企画での役割。無ければ null。 */
+  getOrganizerRole(
+    projectId: ProjectId,
+    userId: string,
+  ): Promise<OrganizerRole | null>;
+
+  /** 共同ホストを追加（新規ユーザーを作り cohost 登録）。ユーザーIDを返す。 */
+  addCohost(projectId: ProjectId, displayName: string): Promise<string>;
 
   /** 企画一覧（主催の全企画）。 */
   listOrganizerProjects(): Promise<OrganizerProjectSummary[]>;

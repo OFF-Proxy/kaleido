@@ -75,3 +75,42 @@ export const SESSION_COOKIE_OPTIONS = {
   sameSite: "lax",
   maxAge: 60 * 60 * 24 * 30, // 30日
 } as const;
+
+// ---- 主催（organizer）セッション ----
+// 参加者(dd_session)とは別枠。主催ユーザーIDを署名して保持する。
+
+/** 主催セッションCookie名。 */
+export const ORG_SESSION_COOKIE = "dd_org";
+
+/** 主催ユーザーIDを署名付きトークンにする（makeSessionToken と同形式）。 */
+export async function makeOrgSessionToken(userId: string): Promise<string> {
+  return makeSessionToken(userId);
+}
+
+/** 主催セッションCookieを検証して主催ユーザーIDを返す。不正なら null。 */
+export async function readOrgSessionToken(
+  token: string | undefined,
+): Promise<string | null> {
+  return readSessionToken(token);
+}
+
+// ---- 共同ホスト招待トークン ----
+// オーナーが発行するリンク。projectId を署名して「このリンクは正規発行」を担保する。
+
+const COHOST_PREFIX = "cohost:";
+
+/** cohost 招待トークンを作る（projectId を署名）。 */
+export async function makeCohostInviteToken(
+  projectId: string,
+): Promise<string> {
+  return makeSessionToken(`${COHOST_PREFIX}${projectId}`);
+}
+
+/** cohost 招待トークンを検証して projectId を返す。不正なら null。 */
+export async function readCohostInviteToken(
+  token: string | undefined,
+): Promise<string | null> {
+  const value = await readSessionToken(token);
+  if (!value || !value.startsWith(COHOST_PREFIX)) return null;
+  return value.slice(COHOST_PREFIX.length);
+}

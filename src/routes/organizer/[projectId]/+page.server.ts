@@ -1,5 +1,6 @@
 import { error, fail } from "@sveltejs/kit";
 import { PHASE_META, phasesForGame } from "$lib/domain/phase.js";
+import { makeCohostInviteToken } from "$lib/server/session.js";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -17,7 +18,30 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   // 誰デザのみ: 作品が1つでもあるとシャッフル再実行で消えるため作品0のときだけ許可
   const canShuffle = !isEgaraate && overview.counts.artworks === 0;
 
-  return { overview, phases, canShuffle, isEgaraate };
+  // 主催者（owner / cohost）と、閲覧者自身の役割。
+  const organizers = await locals.repository.listProjectOrganizers(
+    params.projectId,
+  );
+  const myUserId = locals.organizer?.userId ?? null;
+  const myRole = myUserId
+    ? await locals.repository.getOrganizerRole(params.projectId, myUserId)
+    : null;
+
+  // 共同ホスト招待リンク（オーナーのみ発行可・deterministic）。
+  const cohostInvitePath =
+    myRole === "owner"
+      ? `/org-join/${await makeCohostInviteToken(params.projectId)}`
+      : null;
+
+  return {
+    overview,
+    phases,
+    canShuffle,
+    isEgaraate,
+    organizers,
+    myRole,
+    cohostInvitePath,
+  };
 };
 
 export const actions: Actions = {

@@ -9,6 +9,8 @@ declare global {
       repository: Repository;
       /** セッションCookieから解決した現在の参加者。未ログインなら null。 */
       participation: Participation | null;
+      /** 主催セッション(dd_org)から解決した主催ユーザー。未ログインなら null。 */
+      organizer: { userId: string } | null;
     }
     /**
      * Cloudflare のバインディング。本番/preview に加え、adapter-cloudflare の

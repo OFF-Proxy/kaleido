@@ -14,7 +14,7 @@
       "cannot": [
         "作成後にゲーム種別を変更する（未実装）",
         "締切をサーバ側で強制する（表示・目安のみ）",
-        "作成時点で共同ホストを追加する（cohost追加UI未実装）"
+        "作成フォーム上で共同ホストを追加する（作成後にダッシュボードの招待リンクから追加）"
       ]
     },
     "platform": ["PC", "モバイル"],
@@ -36,12 +36,15 @@
         "作画者を投票候補から除外する設定の切替（誰デザ）",
         "未提出者へ催促通知を送る",
         "参加者ごとの招待リンクをコピー配布",
-        "匿名ラベルで割当と希望充足を確認"
+        "匿名ラベルで割当と希望充足を確認",
+        "主催メンバー(owner/cohost)一覧と自分の権限を表示",
+        "共同ホスト招待リンクを発行（オーナーのみ）"
       ],
       "cannot": [
         "作品が1件でも提出済みならシャッフルを再実行する（データ保護のため禁止）",
         "絵柄当てでシャッフルする（仕様上シャッフルが無い）",
-        "作者と提出物の対応を主催が見る（匿名ラベルのみ、開示はResult）"
+        "作者と提出物の対応を主催が見る（匿名ラベルのみ、開示はResult）",
+        "非主催の操作を強制ブロックする（権限はソフト表示のみ、ハードゲート未実装）"
       ]
     },
     "platform": ["PC", "モバイル"],
@@ -49,6 +52,7 @@
       "src/routes/organizer/[projectId]/+page.server.ts",
       "src/routes/organizer/[projectId]/+page.svelte",
       "src/lib/server/d1-repo.ts",
+      "src/lib/server/session.ts",
       "src/lib/domain/shuffle.ts",
       "src/lib/domain/phase.ts"
     ],
@@ -275,5 +279,46 @@
       "src/hooks.server.ts"
     ],
     "usage_example": "/logout でログアウト。"
+  },
+  {
+    "name": "役割選択（主催/参加）",
+    "description": "Kaleidoをどの立場で使うか（主催する/参加する）を選ぶ入口。",
+    "capabilities": {
+      "can": [
+        "主催→企画作成/ダッシュボードへ誘導",
+        "参加→公開企画の閲覧/参加者ダッシュボードへ誘導",
+        "招待リンクの説明を提示"
+      ],
+      "cannot": [
+        "ここでアカウント登録する（アカウント制は無い。参加はトークン、主催はセッション）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": ["src/routes/start/+page.svelte"],
+    "usage_example": "/start で「主催する」か「参加する」を選ぶ。"
+  },
+  {
+    "name": "共同ホスト参加",
+    "description": "オーナー発行の招待リンクから、共同ホストとして主催メンバーに加わる。",
+    "capabilities": {
+      "can": [
+        "招待リンク(/org-join/<token>)で表示名を入力して参加",
+        "主催セッション(dd_org)を得てダッシュボードを操作",
+        "主催メンバー一覧に cohost として表示される"
+      ],
+      "cannot": [
+        "無効/改ざんされた招待トークンで参加（404）",
+        "共同ホスト招待リンクを自分で発行する（発行はオーナーのみ）",
+        "オーナー権限（企画の所有者）を得る（役割はcohost）"
+      ]
+    },
+    "platform": ["PC", "モバイル"],
+    "related_files": [
+      "src/routes/org-join/[token]/+page.server.ts",
+      "src/routes/org-join/[token]/+page.svelte",
+      "src/lib/server/session.ts",
+      "src/lib/server/d1-repo.ts"
+    ],
+    "usage_example": "オーナーがダッシュボードで出したリンクを開き、名前を入れて「共同ホストとして参加」。"
   }
 ]

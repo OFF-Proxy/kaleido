@@ -36,7 +36,9 @@ import type {
   CreateProjectInput,
   OrganizerOverview,
   OrganizerProjectSummary,
+  OrganizerRole,
   ParticipantTask,
+  ProjectOrganizerEntry,
   PublicProjectSummary,
   RankingEntry,
   Repository,
@@ -605,7 +607,52 @@ export function createD1Repository(db: D1Database): Repository {
           now,
         );
       }
-      return id;
+      return { id, ownerUserId: uid };
+    },
+
+    async listProjectOrganizers(id) {
+      const rows = await all(
+        `SELECT po.user_id, po.role, u.display_name
+         FROM project_organizers po JOIN users u ON u.id = po.user_id
+         WHERE po.project_id=?
+         ORDER BY (po.role='owner') DESC, po.created_at ASC`,
+        id,
+      );
+      return rows.map(
+        (r): ProjectOrganizerEntry => ({
+          userId: r.user_id as string,
+          role: r.role as OrganizerRole,
+          displayName: r.display_name as string,
+        }),
+      );
+    },
+
+    async getOrganizerRole(id, userId) {
+      const r = await one(
+        "SELECT role FROM project_organizers WHERE project_id=? AND user_id=?",
+        id,
+        userId,
+      );
+      return r ? (r.role as OrganizerRole) : null;
+    },
+
+    async addCohost(id, displayName) {
+      const now = new Date().toISOString();
+      const uid = `u-${crypto.randomUUID().slice(0, 8)}`;
+      await run(
+        "INSERT INTO users (id, display_name, created_at) VALUES (?,?,?)",
+        uid,
+        displayName.trim() || "共同ホスト",
+        now,
+      );
+      await run(
+        "INSERT INTO project_organizers (project_id, user_id, role, created_at) VALUES (?,?,?,?)",
+        id,
+        uid,
+        "cohost",
+        now,
+      );
+      return uid;
     },
 
     async listOrganizerProjects() {

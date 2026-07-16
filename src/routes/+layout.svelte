@@ -7,6 +7,7 @@
 
   const nav = [
     { href: "/", label: "ホーム" },
+    { href: "/start", label: "はじめる" },
     { href: "/explore", label: "みんな" },
     { href: "/dashboard", label: "参加者" },
     { href: "/gallery", label: "ギャラリー" },

@@ -16,6 +16,15 @@
       /* noop */
     }
   }
+
+  async function copyCohost() {
+    if (!data.cohostInvitePath) return;
+    try {
+      await navigator.clipboard.writeText(`${origin}${data.cohostInvitePath}`);
+    } catch {
+      /* noop */
+    }
+  }
 </script>
 
 <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -78,6 +87,51 @@
       </li>
     {/each}
   </ol>
+</section>
+
+<!-- 主催メンバー -->
+<section class="dd-card mt-6 p-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-[16px] font-bold">主催メンバー</h2>
+    {#if data.myRole}
+      <span class="dd-chip">あなた: {data.myRole === "owner" ? "オーナー" : "共同ホスト"}</span>
+    {:else}
+      <span class="text-[12px]" style="color: var(--color-ink-faint);">
+        あなたはこの企画の主催として認識されていません（閲覧）
+      </span>
+    {/if}
+  </div>
+  <div class="mt-3 flex flex-wrap gap-2">
+    {#each data.organizers as o (o.userId)}
+      <span class="tag {o.role === 'owner' ? 'tag-violet' : ''}" style="font-size: 12px; padding: 3px 10px;">
+        <span>{o.role === "owner" ? "👑 " : "🤝 "}{o.displayName}</span>
+      </span>
+    {/each}
+  </div>
+  {#if data.cohostInvitePath}
+    <div class="mt-4">
+      <div class="dd-eyebrow" style="color: var(--color-ink-subtle);">共同ホストを招待</div>
+      <p class="mt-1 text-[12px]" style="color: var(--color-ink-faint);">
+        このリンクを渡すと、相手は名前を入力して共同ホストとして参加できます。
+      </p>
+      <div class="mt-2 flex w-full items-center gap-2">
+        <code
+          class="min-w-0 flex-1 truncate rounded-[3px] px-2 py-1 text-[12px]"
+          style="background: var(--color-canvas); color: var(--color-ink-subtle);"
+        >
+          {origin}{data.cohostInvitePath}
+        </code>
+        <button
+          type="button"
+          class="dd-btn dd-btn-secondary shrink-0"
+          style="padding: 4px 10px; font-size: 12px;"
+          onclick={copyCohost}
+        >
+          コピー
+        </button>
+      </div>
+    </div>
+  {/if}
 </section>
 
 <!-- 提出状況カウンタ -->

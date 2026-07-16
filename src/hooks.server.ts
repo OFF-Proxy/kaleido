@@ -1,5 +1,10 @@
 import type { Handle } from "@sveltejs/kit";
-import { SESSION_COOKIE, readSessionToken } from "$lib/server/session.js";
+import {
+  SESSION_COOKIE,
+  ORG_SESSION_COOKIE,
+  readSessionToken,
+  readOrgSessionToken,
+} from "$lib/server/session.js";
 import { getRepository } from "$lib/server/index.js";
 
 /**
@@ -16,6 +21,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.participation = participationId
     ? await repository.getParticipationById(participationId)
     : null;
+
+  // 主催セッション（cohost 含む）。ユーザーIDのみ保持し、権限は企画ごとに判定。
+  const orgRaw = event.cookies.get(ORG_SESSION_COOKIE);
+  const orgUserId = await readOrgSessionToken(orgRaw);
+  event.locals.organizer = orgUserId ? { userId: orgUserId } : null;
 
   return resolve(event);
 };
